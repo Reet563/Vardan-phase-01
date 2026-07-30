@@ -25,18 +25,20 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Model path resolution
 # ---------------------------------------------------------------------------
+import os
+
 _MODEL_FILENAME = "gwp_100yr_model.joblib"
 
-_SERVICES_DIR = Path(__file__).resolve().parent
-_APP_DIR = _SERVICES_DIR.parent
-_BACKEND_DIR = _APP_DIR.parent
-_PROJECT_ROOT = _BACKEND_DIR.parent
+_SERVICES_DIR = os.path.dirname(os.path.abspath(__file__))
+_APP_DIR = os.path.dirname(_SERVICES_DIR)
+_BACKEND_DIR = os.path.dirname(_APP_DIR)
+_PROJECT_ROOT = os.path.dirname(_BACKEND_DIR)
 
 _MODEL_SEARCH_PATHS: list[Path] = [
-    _PROJECT_ROOT / "models" / _MODEL_FILENAME,
-    _BACKEND_DIR / "models" / _MODEL_FILENAME,
-    _BACKEND_DIR / _MODEL_FILENAME,
-    _PROJECT_ROOT / _MODEL_FILENAME,
+    Path(os.path.join(_PROJECT_ROOT, "models", _MODEL_FILENAME)),
+    Path(os.path.join(_BACKEND_DIR, "models", _MODEL_FILENAME)),
+    Path(os.path.join(_BACKEND_DIR, _MODEL_FILENAME)),
+    Path(os.path.join(_PROJECT_ROOT, _MODEL_FILENAME)),
 ]
 
 # Feature column order MUST match what the model was trained on
