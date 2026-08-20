@@ -18,10 +18,17 @@ from app.schemas.gwp_schema import (
     PredictionRequest,
     PredictionResponse,
 )
+from app.schemas.transport_schema import (
+    TransportRequest,
+    TransportResponse,
+    VehicleInfo,
+    VehicleListResponse,
+)
 from app.services.material_service import material_service
 from app.services.prediction_service import prediction_service
+from app.services.transport_service import transport_service
 
-router = APIRouter(prefix="/api/v1", tags=["GWP Predictions"])
+router = APIRouter(prefix="/api/v1", tags=["GWP & Logistics Predictions"])
 
 
 # ---------------------------------------------------------------------------
@@ -64,19 +71,61 @@ async def get_base_gwp(
 
 
 # ---------------------------------------------------------------------------
+# GET /api/v1/transport/vehicles
+# ---------------------------------------------------------------------------
+@router.get(
+    "/transport/vehicles",
+    response_model=VehicleListResponse,
+    summary="List supported transport fleet vehicles",
+    description="Returns available transport vehicles with curb weight and base CO2 emission rates.",
+)
+async def list_transport_vehicles() -> VehicleListResponse:
+    vehicles_dict = transport_service.get_vehicles()
+    vehicle_items = [
+        VehicleInfo(
+            vehicle_type=k,
+            vehicle_weight_kg=v["vehicle_weight_kg"],
+            base_emission_g_per_km=v["base_emission_g_per_km"],
+            icon=v.get("icon", "Truck"),
+            description=v.get("description", ""),
+        )
+        for k, v in vehicles_dict.items()
+    ]
+    return VehicleListResponse(count=len(vehicle_items), vehicles=vehicle_items)
+
+
+# ---------------------------------------------------------------------------
+# POST /api/v1/transport/calculate
+# ---------------------------------------------------------------------------
+@router.post(
+    "/transport/calculate",
+    response_model=TransportResponse,
+    summary="Calculate transportation CO2 emissions (LCA A4)",
+    description=(
+        "Calculates total and normalized transportation CO2 emissions for a "
+        "given vehicle type, transit distance, and load weight."
+    ),
+)
+async def calculate_transport_emissions(request: TransportRequest) -> TransportResponse:
+    result = transport_service.calculate_emissions(
+        vehicle_type=request.vehicle_type,
+        distance_km=request.distance_km,
+        load_weight_kg=request.load_weight_kg,
+    )
+    return TransportResponse(**result)
+
+
+# ---------------------------------------------------------------------------
 # POST /api/v1/predict
 # ---------------------------------------------------------------------------
 @router.post(
     "/predict",
     response_model=PredictionResponse,
-    summary="Predict 100-year GWP under a climate scenario",
+    summary="Predict 100-year GWP & Lifecycle Carbon under a climate scenario",
     description=(
-        "Accepts a material name and four climate-scenario features. "
-        "Retrieves the material's baseline embodied carbon from the ICE V5 "
-        "dataset, then runs the trained ML model to produce a 100-year GWP "
-        "prediction. The **calamity_carbon_penalty** is the difference between "
-        "the predicted value and the baseline (i.e., the extra carbon burden "
-        "attributable to the climate scenario)."
+        "Accepts a material name, climate-scenario features, and optional transport "
+        "logistics parameters. Retrieves baseline embodied carbon from ICE V5, runs the "
+        "ML model for 100-year dynamic GWP, and computes integrated lifecycle emissions."
     ),
 )
 async def predict_gwp(request: PredictionRequest) -> PredictionResponse:
@@ -89,9 +138,27 @@ async def predict_gwp(request: PredictionRequest) -> PredictionResponse:
     # 3. Derive the calamity carbon penalty
     calamity_carbon_penalty = predicted_100yr_gwp - base_gwp
 
+    # 4. Process optional transportation emissions (LCA Stage A4)
+    transport_response: TransportResponse | None = None
+    total_cradle_to_site: float | None = None
+    total_lifecycle: float | None = None
+
+    if request.transport is not None:
+        raw_transport = transport_service.calculate_emissions(
+            vehicle_type=request.transport.vehicle_type,
+            distance_km=request.transport.distance_km,
+            load_weight_kg=request.transport.load_weight_kg,
+        )
+        transport_response = TransportResponse(**raw_transport)
+        total_cradle_to_site = base_gwp + transport_response.per_kg_transport_co2e
+        total_lifecycle = predicted_100yr_gwp + transport_response.per_kg_transport_co2e
+
     return PredictionResponse(
         material_name=request.material_name,
         base_gwp_A1A3=base_gwp,
         predicted_100yr_gwp=predicted_100yr_gwp,
         calamity_carbon_penalty=calamity_carbon_penalty,
+        transport=transport_response,
+        total_cradle_to_site_gwp=total_cradle_to_site,
+        total_lifecycle_carbon=total_lifecycle,
     )

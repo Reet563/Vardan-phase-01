@@ -6,7 +6,10 @@ response payloads.
 """
 from __future__ import annotations
 
+from typing import Optional
 from pydantic import BaseModel, Field
+
+from app.schemas.transport_schema import TransportRequest, TransportResponse
 
 
 class PredictionRequest(BaseModel):
@@ -41,6 +44,12 @@ class PredictionRequest(BaseModel):
         description="Climate policy stringency score (0 = no policy, 100 = maximum stringency).",
     )
 
+    # Optional transport parameters (LCA Stage A4)
+    transport: Optional[TransportRequest] = Field(
+        default=None,
+        description="Optional transport logistics parameters (vehicle, distance, cargo load).",
+    )
+
     model_config = {
         "json_schema_extra": {
             "example": {
@@ -49,6 +58,11 @@ class PredictionRequest(BaseModel):
                 "temperature_anomaly": 1.2,
                 "sea_level_rise": 12.0,
                 "policy_score": 65.0,
+                "transport": {
+                    "vehicle_type": "Diesel Van",
+                    "distance_km": 50.0,
+                    "load_weight_kg": 1000.0,
+                },
             }
         }
     }
@@ -72,6 +86,18 @@ class PredictionResponse(BaseModel):
         ...,
         description="Additional carbon penalty attributed to climate calamity factors "
         "(predicted_100yr_gwp − base_gwp_A1A3, kg CO₂e / kg).",
+    )
+    transport: Optional[TransportResponse] = Field(
+        default=None,
+        description="Calculated transportation emissions (LCA Stage A4) if requested.",
+    )
+    total_cradle_to_site_gwp: Optional[float] = Field(
+        default=None,
+        description="Combined cradle-to-site emissions: Base A1–A3 + normalized transport carbon (kg CO₂e / kg).",
+    )
+    total_lifecycle_carbon: Optional[float] = Field(
+        default=None,
+        description="Total 100-year lifecycle carbon footprint including transport (kg CO₂e / kg).",
     )
 
 

@@ -912,16 +912,339 @@
     border-bottom: 1px solid var(--border);
   }
   .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+  .metrics-grid.grid-4-cols { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 640px) {
   .header { padding: 12px 16px; }
   .panel { padding: 18px; }
-  .metrics-grid { grid-template-columns: 1fr; }
+  .metrics-grid, .metrics-grid.grid-4-cols { grid-template-columns: 1fr; }
   .header-badge { display: none; }
   .phase-badge { display: none; }
   .region-btn-label { max-width: 120px; }
   .roadmap-banner { padding: 10px 16px; }
   .roadmap-phase2-note { display: none; }
+  .fleet-grid { grid-template-columns: 1fr; }
+}
+
+/* ══════════════════════════════════════════════════
+   Transport & Logistics (LCA Stage A4) Styles
+══════════════════════════════════════════════════ */
+.section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Toggle Switch */
+.toggle-switch-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-checkbox {
+  display: none;
+}
+
+.toggle-slider {
+  width: 32px;
+  height: 18px;
+  background: rgba(56, 90, 150, 0.3);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  position: relative;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.toggle-slider::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.toggle-checkbox:checked + .toggle-slider {
+  background: rgba(0, 212, 170, 0.25);
+  border-color: var(--teal);
+}
+
+.toggle-checkbox:checked + .toggle-slider::after {
+  transform: translateX(14px);
+  background: var(--teal);
+}
+
+.toggle-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.transport-panel-section {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(56, 90, 150, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+.transport-controls-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+/* Fleet Selection Grid */
+.fleet-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.fleet-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(10, 16, 28, 0.7);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s, box-shadow 0.15s;
+  font-family: inherit;
+}
+
+.fleet-card:hover {
+  border-color: var(--vehicle-accent);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.fleet-card.active {
+  border-color: var(--vehicle-accent);
+  background: rgba(15, 23, 42, 0.95);
+  box-shadow: 0 0 12px rgba(0, 212, 170, 0.15);
+}
+
+.fleet-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fleet-card-icon {
+  color: var(--vehicle-accent);
+  display: flex;
+  align-items: center;
+}
+
+.fleet-card-rate {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--vehicle-accent);
+}
+
+.fleet-card-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.fleet-card-curb {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+/* Transport Sliders */
+.transport-slider-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.transport-slider-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.transport-param-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.transport-param-val {
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.param-unit {
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* Live Transport Pill */
+.transport-live-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(10, 16, 28, 0.85);
+  border: 1px solid rgba(56, 90, 150, 0.25);
+  font-size: 0.68rem;
+}
+
+.pill-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pill-lbl {
+  color: var(--text-muted);
+}
+
+.pill-val {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pill-divider {
+  width: 1px;
+  height: 12px;
+  background: var(--border);
+}
+
+.text-amber { color: var(--amber); }
+.text-teal { color: var(--teal); }
+
+.transport-disabled-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(10, 16, 28, 0.5);
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.muted-icon {
+  color: var(--text-muted);
+}
+
+/* 4-column metric grid */
+.metrics-grid.grid-4-cols {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.metric-subtitle {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+.chart-subtitle {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Transport Detail Card */
+.transport-detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  border-radius: var(--radius-md);
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(56, 90, 150, 0.25);
+  backdrop-filter: blur(16px);
+}
+
+.transport-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.transport-detail-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.transport-detail-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.vehicle-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  color: var(--amber);
+}
+
+.transport-calc-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .transport-calc-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.calc-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(10, 16, 28, 0.6);
+  border: 1px solid rgba(56, 90, 150, 0.15);
+}
+
+.calc-item.highlight-calc {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: rgba(0, 212, 170, 0.2);
+}
+
+.calc-lbl {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.calc-val {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 

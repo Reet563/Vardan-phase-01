@@ -8,7 +8,8 @@ import {
   Leaf, Thermometer, Waves, Wind, ShieldCheck,
   AlertTriangle, Loader2, ChevronDown, Search, X,
   TrendingUp, TrendingDown, Minus, FlaskConical,
-  Globe, MapPin, Lock, Info, ChevronRight, Zap
+  Globe, MapPin, Lock, Info, ChevronRight, Zap,
+  Truck, Fuel, Bike, Navigation, Scale, Box, CheckCircle2
 } from 'lucide-react';
 import './Dashboard.css';
 
@@ -60,7 +61,7 @@ const ClimateSlider = ({ icon: Icon, label, unit, value, min, max, step, color, 
   );
 };
 
-/* ── Hazard Intensity Slider (specialised first slider) ── */
+/* ── Hazard Intensity Slider ── */
 const HAZARD_PRESETS = [
   { label: 'Inland Baseline',    value: 5,  title: 'Low exposure — continental interior, minimal typhoon/storm risk' },
   { label: 'Urban Average',      value: 15, title: 'Moderate exposure — typical metropolitan area' },
@@ -71,12 +72,10 @@ const HazardSlider = ({ value, onChange }) => {
   const color = 'var(--amber)';
   const min = 0; const max = 50; const step = 0.5;
   const pct = ((value - min) / (max - min)) * 100;
-  const [tipOpen, setTipOpen] = React.useState(false);
+  const [tipOpen, setTipOpen] = useState(false);
 
   return (
     <div className="slider-row hazard-slider-row">
-
-      {/* Header row */}
       <div className="slider-header">
         <div className="slider-icon" style={{ '--icon-color': color }}>
           <AlertTriangle size={15} />
@@ -98,7 +97,6 @@ const HazardSlider = ({ value, onChange }) => {
         </span>
       </div>
 
-      {/* Collapsible info tooltip */}
       {tipOpen && (
         <div className="hazard-tooltip">
           <p className="hazard-tooltip-text">
@@ -108,7 +106,6 @@ const HazardSlider = ({ value, onChange }) => {
         </div>
       )}
 
-      {/* Quick preset buttons */}
       <div className="hazard-presets">
         {HAZARD_PRESETS.map(p => (
           <button
@@ -123,7 +120,6 @@ const HazardSlider = ({ value, onChange }) => {
         ))}
       </div>
 
-      {/* Slider track */}
       <div className="slider-track-wrap">
         <div className="slider-fill" style={{ width: `${pct}%`, background: color }} />
         <input
@@ -141,7 +137,7 @@ const HazardSlider = ({ value, onChange }) => {
 };
 
 /* ── Metric Card ── */
-const MetricCard = ({ label, value, unit, icon: Icon, color, delta }) => {
+const MetricCard = ({ label, value, unit, icon: Icon, color, delta, subtitle }) => {
   const TrendIcon = delta > 0 ? TrendingUp : delta < 0 ? TrendingDown : Minus;
   return (
     <div className="metric-card" style={{ '--card-accent': color }}>
@@ -152,7 +148,7 @@ const MetricCard = ({ label, value, unit, icon: Icon, color, delta }) => {
         </div>
       </div>
       <div className="metric-value">
-        {value !== null ? (
+        {value !== null && value !== undefined ? (
           <>
             <span className="metric-number">{value.toFixed(4)}</span>
             <span className="metric-unit">{unit}</span>
@@ -161,7 +157,10 @@ const MetricCard = ({ label, value, unit, icon: Icon, color, delta }) => {
           <span className="metric-placeholder">—</span>
         )}
       </div>
-      {delta !== undefined && value !== null && (
+      {subtitle && (
+        <div className="metric-subtitle">{subtitle}</div>
+      )}
+      {delta !== undefined && value !== null && value !== undefined && (
         <div className="metric-delta" style={{ color: delta > 0 ? 'var(--rose)' : delta < 0 ? 'var(--teal)' : 'var(--text-muted)' }}>
           <TrendIcon size={12} />
           <span>{delta > 0 ? '+' : ''}{delta.toFixed(4)} vs baseline</span>
@@ -311,6 +310,58 @@ const RegionSelector = () => {
   );
 };
 
+/* ── Vehicle Fleet Specifications ── */
+const FLEET_VEHICLES = [
+  {
+    type: 'Electric Van',
+    icon: Zap,
+    curbKg: 1500,
+    baseRate: 40.0,
+    badge: 'EV Zero-Tailpipe',
+    accent: 'var(--teal)',
+    desc: 'Light Commercial EV (1,500 kg curb, 40 g/km)',
+  },
+  {
+    type: 'Diesel Van',
+    icon: Truck,
+    curbKg: 2000,
+    baseRate: 180.0,
+    badge: 'Standard Diesel',
+    accent: 'var(--amber)',
+    desc: 'Heavy Transport Van (2,000 kg curb, 180 g/km)',
+  },
+  {
+    type: 'CNG Truck',
+    icon: Fuel,
+    curbKg: 970,
+    baseRate: 120.0,
+    badge: 'Clean Natural Gas',
+    accent: 'var(--cyan)',
+    desc: 'Medium Utility Truck (970 kg curb, 120 g/km)',
+  },
+  {
+    type: 'Bike',
+    icon: Bike,
+    curbKg: 120,
+    baseRate: 25.0,
+    badge: 'Micro Logistics',
+    accent: 'var(--rose)',
+    desc: 'Cargo Two-Wheeler (120 kg curb, 25 g/km)',
+  },
+];
+
+const DIST_PRESETS = [
+  { label: 'Local (15 km)', value: 15 },
+  { label: 'Regional (60 km)', value: 60 },
+  { label: 'Intercity (150 km)', value: 150 },
+];
+
+const LOAD_PRESETS = [
+  { label: '250 kg', value: 250 },
+  { label: '1,000 kg', value: 1000 },
+  { label: '2,500 kg', value: 2500 },
+];
+
 /* ══════════════════════════════════════════════════════════════
    Main Dashboard
 ══════════════════════════════════════════════════════════════ */
@@ -319,6 +370,7 @@ export default function Dashboard() {
   const [matLoading, setMatLoading] = useState(true);
   const [selected, setSelected]     = useState('');
 
+  /* Climate Parameters */
   const [params, setParams] = useState({
     extreme_weather_events: 15.0,
     temperature_anomaly:    1.2,
@@ -326,9 +378,17 @@ export default function Dashboard() {
     policy_score:           65.0,
   });
 
-  const [result, setResult]       = useState(null);
+  /* Transportation Parameters (LCA Stage A4) */
+  const [transportActive, setTransportActive] = useState(true);
+  const [transportParams, setTransportParams] = useState({
+    vehicle_type:   'Diesel Van',
+    distance_km:    50.0,
+    load_weight_kg: 1000.0,
+  });
+
+  const [result, setResult]         = useState(null);
   const [predicting, setPredicting] = useState(false);
-  const [error, setError]         = useState(null);
+  const [error, setError]           = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   /* Fetch material list on mount */
@@ -338,16 +398,31 @@ export default function Dashboard() {
       .catch(() => { setError('Could not reach the backend. Is FastAPI running on port 8000?'); setMatLoading(false); });
   }, []);
 
+  /* Client-side live estimate of transport emissions */
+  const selectedVehicleObj = FLEET_VEHICLES.find(v => v.type === transportParams.vehicle_type) || FLEET_VEHICLES[1];
+  const totalWeight = selectedVehicleObj.curbKg + transportParams.load_weight_kg;
+  const weightFactor = totalWeight / selectedVehicleObj.curbKg;
+  const estTransportEmissionsG = selectedVehicleObj.baseRate * transportParams.distance_km * weightFactor;
+  const estTransportEmissionsKg = estTransportEmissionsG / 1000.0;
+  const estPerKgTransportCo2e = transportParams.load_weight_kg > 0 ? (estTransportEmissionsKg / transportParams.load_weight_kg) : 0;
+
   /* Trigger prediction */
   const predict = async () => {
     if (!selected) return;
     setPredicting(true);
     setError(null);
     try {
-      const { data } = await axios.post(`${API}/predict`, {
+      const payload = {
         material_name: selected,
         ...params,
-      });
+        transport: transportActive ? {
+          vehicle_type: transportParams.vehicle_type,
+          distance_km: transportParams.distance_km,
+          load_weight_kg: transportParams.load_weight_kg,
+        } : null,
+      };
+
+      const { data } = await axios.post(`${API}/predict`, payload);
       setResult(data);
     } catch (e) {
       setError(e.response?.data?.detail || 'Prediction failed. Check the backend logs.');
@@ -357,10 +432,53 @@ export default function Dashboard() {
     }
   };
 
-  const chartData = result ? [
-    { name: 'Baseline GWP\n(A1–A3)', value: result.base_gwp_A1A3,         shortName: 'Baseline' },
-    { name: 'Predicted 100-yr\nDynamic GWP',  value: result.predicted_100yr_gwp, shortName: '100-yr Predicted' },
-  ] : [];
+  /* Chart data building */
+  let chartData = [];
+  if (result) {
+    if (result.transport) {
+      chartData = [
+        {
+          name: '1. Upfront Embodied\n(A1–A3)',
+          shortName: 'A1–A3 Embodied',
+          value: result.base_gwp_A1A3,
+          color: '#00d4aa',
+        },
+        {
+          name: '2. Logistics Transit\n(A4)',
+          shortName: 'A4 Transport',
+          value: result.transport.per_kg_transport_co2e,
+          color: '#fbbf24',
+        },
+        {
+          name: '3. 100-yr Dynamic\n(B1–B7 Calamity)',
+          shortName: '100-yr Calamity',
+          value: result.predicted_100yr_gwp,
+          color: '#38bdf8',
+        },
+        {
+          name: '4. Total Lifecycle\n(Cradle-to-Lifespan)',
+          shortName: 'Net Lifecycle',
+          value: result.total_lifecycle_carbon || (result.predicted_100yr_gwp + result.transport.per_kg_transport_co2e),
+          color: '#a78bfa',
+        },
+      ];
+    } else {
+      chartData = [
+        {
+          name: 'Baseline GWP\n(A1–A3)',
+          shortName: 'Baseline A1-A3',
+          value: result.base_gwp_A1A3,
+          color: '#00d4aa',
+        },
+        {
+          name: 'Predicted 100-yr\nDynamic GWP',
+          shortName: '100-yr Predicted',
+          value: result.predicted_100yr_gwp,
+          color: '#38bdf8',
+        },
+      ];
+    }
+  }
 
   const penalty = result ? result.calamity_carbon_penalty : undefined;
 
@@ -382,21 +500,16 @@ export default function Dashboard() {
                 <span className="phase-badge-active">Active</span>
               </span>
             </div>
-            <p className="header-sub">GWP Intelligence Engine · ICE V5 Database</p>
+            <p className="header-sub">GWP Intelligence Engine · ICE V5 Database · LCA Stage A1–A4 & B1–B7</p>
           </div>
         </div>
 
         <div className="header-right">
-          {/* ── Model Regionalization Selector ── */}
           <RegionSelector />
-
-          {/* ── API Live Badge ── */}
           <div className="header-badge">
             <span className="badge-dot" />
             API Live
           </div>
-
-          {/* ── Roadmap Info Trigger ── */}
           <button
             className="info-btn"
             onClick={() => setDrawerOpen(o => !o)}
@@ -412,10 +525,10 @@ export default function Dashboard() {
         {/* ══ LEFT PANEL: Controls ══ */}
         <aside className="panel panel-controls">
 
-          {/* Material Selector */}
+          {/* Section 1: Material Selector */}
           <section className="panel-section">
             <h2 className="section-title">
-              <FlaskConical size={15} /> Material Selection
+              <FlaskConical size={15} /> 1. Material Selection (A1–A3)
             </h2>
             <MaterialSelector
               materials={materials}
@@ -428,13 +541,162 @@ export default function Dashboard() {
 
           <div className="divider" />
 
-          {/* Climate Sliders */}
+          {/* Section 2: Transportation & Logistics (LCA A4) */}
+          <section className="panel-section transport-panel-section">
+            <div className="section-header-row">
+              <h2 className="section-title">
+                <Truck size={15} /> 2. Transport Logistics (A4)
+              </h2>
+              <label className="toggle-switch-wrap" title="Toggle Transportation Emissions Calculation">
+                <input
+                  type="checkbox"
+                  checked={transportActive}
+                  onChange={e => setTransportActive(e.target.checked)}
+                  className="toggle-checkbox"
+                />
+                <span className="toggle-slider" />
+                <span className="toggle-label">{transportActive ? 'Active' : 'Off'}</span>
+              </label>
+            </div>
+
+            {transportActive ? (
+              <div className="transport-controls-wrap">
+                {/* Fleet Grid */}
+                <div className="fleet-grid">
+                  {FLEET_VEHICLES.map(v => {
+                    const VIcon = v.icon;
+                    const isSelected = transportParams.vehicle_type === v.type;
+                    return (
+                      <button
+                        key={v.type}
+                        className={`fleet-card ${isSelected ? 'active' : ''}`}
+                        onClick={() => setTransportParams(p => ({ ...p, vehicle_type: v.type }))}
+                        style={{ '--vehicle-accent': v.accent }}
+                      >
+                        <div className="fleet-card-top">
+                          <div className="fleet-card-icon">
+                            <VIcon size={16} />
+                          </div>
+                          <span className="fleet-card-rate">{v.baseRate} g/km</span>
+                        </div>
+                        <div className="fleet-card-title">{v.type}</div>
+                        <div className="fleet-card-curb">Curb: {v.curbKg.toLocaleString()} kg</div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Distance Slider */}
+                <div className="transport-slider-block">
+                  <div className="transport-slider-header">
+                    <span className="transport-param-label">
+                      <Navigation size={13} /> Transit Distance
+                    </span>
+                    <span className="transport-param-val" style={{ color: 'var(--amber)' }}>
+                      {transportParams.distance_km.toFixed(0)} <span className="param-unit">km</span>
+                    </span>
+                  </div>
+
+                  <div className="hazard-presets">
+                    {DIST_PRESETS.map(dp => (
+                      <button
+                        key={dp.value}
+                        className={`hazard-preset-btn ${transportParams.distance_km === dp.value ? 'active' : ''}`}
+                        onClick={() => setTransportParams(p => ({ ...p, distance_km: dp.value }))}
+                      >
+                        {dp.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="slider-track-wrap">
+                    <div
+                      className="slider-fill"
+                      style={{ width: `${(transportParams.distance_km / 300) * 100}%`, background: 'var(--amber)' }}
+                    />
+                    <input
+                      type="range" min={1} max={300} step={1}
+                      value={transportParams.distance_km}
+                      onChange={e => setTransportParams(p => ({ ...p, distance_km: parseFloat(e.target.value) }))}
+                      className="slider-input"
+                      style={{ '--thumb-color': 'var(--amber)' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Payload Weight Slider */}
+                <div className="transport-slider-block">
+                  <div className="transport-slider-header">
+                    <span className="transport-param-label">
+                      <Scale size={13} /> Cargo Batch Weight
+                    </span>
+                    <span className="transport-param-val" style={{ color: 'var(--teal)' }}>
+                      {transportParams.load_weight_kg.toLocaleString()} <span className="param-unit">kg</span>
+                    </span>
+                  </div>
+
+                  <div className="hazard-presets">
+                    {LOAD_PRESETS.map(lp => (
+                      <button
+                        key={lp.value}
+                        className={`hazard-preset-btn ${transportParams.load_weight_kg === lp.value ? 'active' : ''}`}
+                        onClick={() => setTransportParams(p => ({ ...p, load_weight_kg: lp.value }))}
+                      >
+                        {lp.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="slider-track-wrap">
+                    <div
+                      className="slider-fill"
+                      style={{ width: `${(transportParams.load_weight_kg / 5000) * 100}%`, background: 'var(--teal)' }}
+                    />
+                    <input
+                      type="range" min={50} max={5000} step={50}
+                      value={transportParams.load_weight_kg}
+                      onChange={e => setTransportParams(p => ({ ...p, load_weight_kg: parseFloat(e.target.value) }))}
+                      className="slider-input"
+                      style={{ '--thumb-color': 'var(--teal)' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Live Transport Math Pill */}
+                <div className="transport-live-pill">
+                  <div className="pill-item">
+                    <span className="pill-lbl">Weight Factor:</span>
+                    <span className="pill-val">{weightFactor.toFixed(3)}×</span>
+                  </div>
+                  <div className="pill-divider" />
+                  <div className="pill-item">
+                    <span className="pill-lbl">Est. Trip CO₂:</span>
+                    <span className="pill-val text-amber">{estTransportEmissionsKg.toFixed(2)} kg</span>
+                  </div>
+                  <div className="pill-divider" />
+                  <div className="pill-item">
+                    <span className="pill-lbl">Normalized:</span>
+                    <span className="pill-val text-teal">{estPerKgTransportCo2e.toFixed(4)} kg/kg</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="transport-disabled-note">
+                <Truck size={14} className="muted-icon" />
+                <span>Transportation carbon calculation bypassed (Cradle-to-Gate only).</span>
+              </div>
+            )}
+          </section>
+
+          <div className="divider" />
+
+          {/* Section 3: Climate Sliders */}
           <section className="panel-section">
             <h2 className="section-title">
-              <Wind size={15} /> Climate Calamity Parameters
+              <Wind size={15} /> 3. Climate Calamity Parameters (B1–B7)
             </h2>
 
-            {/* ── Educational Callout ── */}
+            {/* Educational Callout */}
             <div className="mitigation-callout">
               <div className="mitigation-callout-header">
                 <div className="mitigation-callout-icon">
@@ -445,13 +707,9 @@ export default function Dashboard() {
                 </span>
               </div>
               <p className="mitigation-callout-body">
-                Selecting low-carbon materials (e.g., Fly Ash or Slag) directly
-                mitigates upfront manufacturing emissions (A1–A3 GWP). However,
-                because atmospheric CO₂ has a century-long residence time, global
-                climate hazards will remain elevated. These sliders stress-test how
-                well your structure{' '}
-                <em>adapts</em> to local environmental degradation — sea surges,
-                extreme weather, and thermal stress — over its{' '}
+                Selecting low-carbon materials directly mitigates upfront emissions (A1–A3)
+                and clean fleets reduce transit emissions (A4). These sliders stress-test how
+                well your structure <em>adapts</em> to local environmental degradation over its{' '}
                 <strong>100-year operational lifespan</strong>.
               </p>
             </div>
@@ -491,9 +749,9 @@ export default function Dashboard() {
             disabled={!selected || predicting}
           >
             {predicting ? (
-              <><Loader2 size={18} className="spin" /> Running Model…</>
+              <><Loader2 size={18} className="spin" /> Running Full Lifecycle Model…</>
             ) : (
-              <><TrendingUp size={18} /> Predict 100-yr GWP</>
+              <><TrendingUp size={18} /> Calculate Full Lifecycle Carbon</>
             )}
           </button>
 
@@ -508,36 +766,63 @@ export default function Dashboard() {
         {/* ══ RIGHT PANEL: Results ══ */}
         <section className="panel panel-results">
 
-          {/* Metric Cards */}
-          <div className="metrics-grid">
+          {/* Metric Cards Grid */}
+          <div className={`metrics-grid ${result?.transport ? 'grid-4-cols' : ''}`}>
             <MetricCard
               label="Initial Embodied Carbon (A1–A3)"
               value={result?.base_gwp_A1A3 ?? null}
               unit="kg CO₂e/kg"
               icon={Leaf}
               color="var(--teal)"
+              subtitle="Cradle-to-Gate Manufacturing"
             />
+            {result?.transport && (
+              <MetricCard
+                label="Transport Carbon (A4)"
+                value={result.transport.per_kg_transport_co2e}
+                unit="kg CO₂e/kg"
+                icon={Truck}
+                color="var(--amber)"
+                subtitle={`${result.transport.vehicle_type} · ${result.transport.co2_emissions_kg.toFixed(2)} kg trip CO₂`}
+              />
+            )}
             <MetricCard
-              label="Predicted 100-Year Dynamic GWP"
+              label="Predicted 100-Yr Dynamic GWP"
               value={result?.predicted_100yr_gwp ?? null}
               unit="kg CO₂e/kg"
               icon={TrendingUp}
               color="var(--cyan)"
               delta={penalty}
+              subtitle="Operational Degradation & Calamity"
             />
-            <MetricCard
-              label="Calamity & Repair Carbon Penalty"
-              value={result?.calamity_carbon_penalty ?? null}
-              unit="kg CO₂e/kg"
-              icon={AlertTriangle}
-              color={penalty !== undefined ? (penalty > 0 ? 'var(--rose)' : 'var(--teal)') : 'var(--amber)'}
-            />
+            {result?.transport ? (
+              <MetricCard
+                label="Net 100-Yr Project Footprint"
+                value={result.total_lifecycle_carbon}
+                unit="kg CO₂e/kg"
+                icon={CheckCircle2}
+                color="var(--violet)"
+                subtitle="A1–A3 + A4 + B1–B7 Combined"
+              />
+            ) : (
+              <MetricCard
+                label="Calamity & Repair Penalty"
+                value={result?.calamity_carbon_penalty ?? null}
+                unit="kg CO₂e/kg"
+                icon={AlertTriangle}
+                color={penalty !== undefined ? (penalty > 0 ? 'var(--rose)' : 'var(--teal)') : 'var(--amber)'}
+                subtitle="Attributed Climate Burden"
+              />
+            )}
           </div>
 
-          {/* Chart */}
+          {/* Chart Section */}
           <div className="chart-card">
             <div className="chart-header">
-              <h2 className="chart-title">GWP Trajectory Comparison</h2>
+              <div>
+                <h2 className="chart-title">Lifecycle Carbon Footprint Trajectory</h2>
+                <p className="chart-subtitle">Modular breakdown across material manufacturing, logistics transit, and 100-year operational lifespan</p>
+              </div>
               {result && (
                 <span className="chart-material-tag">{result.material_name}</span>
               )}
@@ -545,21 +830,29 @@ export default function Dashboard() {
 
             {result ? (
               <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={chartData} barCategoryGap="35%" margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                <BarChart data={chartData} barCategoryGap="30%" margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
                   <defs>
                     <linearGradient id="gradBaseline" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#00d4aa" stopOpacity={0.9} />
                       <stop offset="100%" stopColor="#00d4aa" stopOpacity={0.4} />
                     </linearGradient>
+                    <linearGradient id="gradTransport" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.9} />
+                      <stop offset="100%" stopColor="#fbbf24" stopOpacity={0.4} />
+                    </linearGradient>
                     <linearGradient id="gradPredicted" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.9} />
                       <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.4} />
+                    </linearGradient>
+                    <linearGradient id="gradTotal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.9} />
+                      <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.4} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
                   <XAxis
                     dataKey="shortName"
-                    tick={{ fill: 'var(--text-secondary)', fontSize: 13, fontFamily: 'Inter' }}
+                    tick={{ fill: 'var(--text-secondary)', fontSize: 12, fontFamily: 'Inter' }}
                     axisLine={false} tickLine={false}
                   />
                   <YAxis
@@ -569,15 +862,17 @@ export default function Dashboard() {
                     label={{ value: 'kg CO₂e / kg', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11, dy: 50 }}
                   />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(56,90,150,0.1)' }} />
-                  <Bar dataKey="value" name="GWP" radius={[8, 8, 0, 0]} maxBarSize={100}>
-                    <Cell fill="url(#gradBaseline)" />
-                    <Cell fill="url(#gradPredicted)" />
+                  <Bar dataKey="value" name="GWP" radius={[8, 8, 0, 0]} maxBarSize={90}>
+                    {chartData.map((entry, index) => {
+                      const fills = ['url(#gradBaseline)', 'url(#gradTransport)', 'url(#gradPredicted)', 'url(#gradTotal)'];
+                      return <Cell key={`cell-${index}`} fill={fills[index % fills.length]} />;
+                    })}
                   </Bar>
                   <ReferenceLine
                     y={result.base_gwp_A1A3}
                     stroke="rgba(0,212,170,0.4)"
                     strokeDasharray="6 3"
-                    label={{ value: 'Baseline', fill: 'var(--teal)', fontSize: 11, position: 'right' }}
+                    label={{ value: 'A1-A3 Base', fill: 'var(--teal)', fontSize: 11, position: 'right' }}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -586,19 +881,66 @@ export default function Dashboard() {
                 <div className="chart-empty-icon">
                   <TrendingUp size={40} />
                 </div>
-                <p className="chart-empty-title">No prediction yet</p>
+                <p className="chart-empty-title">No prediction calculated yet</p>
                 <p className="chart-empty-hint">
-                  Select a material, adjust the climate parameters, then click
-                  <strong> Predict 100-yr GWP</strong>.
+                  Select a material, configure transportation & climate parameters, then click
+                  <strong> Calculate Full Lifecycle Carbon</strong>.
                 </p>
               </div>
             )}
           </div>
 
+          {/* Transport Detailed Calculation Card */}
+          {result?.transport && (
+            <div className="transport-detail-card">
+              <div className="transport-detail-header">
+                <div className="transport-detail-title-group">
+                  <Truck size={17} className="text-amber" />
+                  <h3 className="transport-detail-title">LCA Stage A4 — Transport & Fleet Calculation Breakdown</h3>
+                </div>
+                <span className="vehicle-badge">{result.transport.vehicle_type}</span>
+              </div>
+              <div className="transport-calc-grid">
+                <div className="calc-item">
+                  <span className="calc-lbl">Vehicle Curb Weight</span>
+                  <span className="calc-val">{result.transport.vehicle_weight_kg.toLocaleString()} kg</span>
+                </div>
+                <div className="calc-item">
+                  <span className="calc-lbl">Material Cargo Load</span>
+                  <span className="calc-val">{result.transport.load_weight_kg.toLocaleString()} kg</span>
+                </div>
+                <div className="calc-item">
+                  <span className="calc-lbl">Total Gross Weight</span>
+                  <span className="calc-val">{result.transport.total_weight_kg.toLocaleString()} kg</span>
+                </div>
+                <div className="calc-item">
+                  <span className="calc-lbl">Transit Distance</span>
+                  <span className="calc-val">{result.transport.distance_km} km</span>
+                </div>
+                <div className="calc-item">
+                  <span className="calc-lbl">Base Emission Rate</span>
+                  <span className="calc-val">{result.transport.base_emission_g_per_km} g/km</span>
+                </div>
+                <div className="calc-item">
+                  <span className="calc-lbl">Load Weight Factor</span>
+                  <span className="calc-val text-amber">{result.transport.weight_factor.toFixed(3)}×</span>
+                </div>
+                <div className="calc-item highlight-calc">
+                  <span className="calc-lbl">Total Trip CO₂ Emissions</span>
+                  <span className="calc-val text-amber">{result.transport.co2_emissions_kg.toFixed(2)} kg ({result.transport.co2_emissions_g.toLocaleString()} g)</span>
+                </div>
+                <div className="calc-item highlight-calc">
+                  <span className="calc-lbl">Normalized per kg Material</span>
+                  <span className="calc-val text-teal">{result.transport.per_kg_transport_co2e.toFixed(4)} kg CO₂e / kg</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Footer note */}
           {result && (
             <div className="result-footer">
-              <span>Model: Random Forest Regressor · ICE V5 Database · {new Date().toLocaleTimeString()}</span>
+              <span>Model: Random Forest Regressor · ICE V5 Database · EN 15978 LCA Modules A1–A4 & B1–B7 · {new Date().toLocaleTimeString()}</span>
             </div>
           )}
 
@@ -610,7 +952,7 @@ export default function Dashboard() {
         <div className="roadmap-banner-inner">
           <div className="roadmap-banner-icon"><Globe size={15} /></div>
           <p className="roadmap-banner-text">
-            <strong>Current system</strong> demonstrates the generic 100-year dynamic GWP framework using global ICE V5 baselines.
+            <strong>Current system</strong> delivers universal 100-year dynamic GWP and fleet transportation accounting (LCA Stage A1–A4).
             <span className="roadmap-phase2-note">
               &nbsp;Phase 2 actively calibrates parameters for Japanese climate hazard matrices
               (salt corrosion, seismic stress) and local JIS / JSCE material standards.
@@ -644,17 +986,17 @@ export default function Dashboard() {
                   <span className="drawer-phase-dot active" />
                   <span className="drawer-phase-label">Phase 1 — Active</span>
                 </div>
-                <h3 className="drawer-phase-title">Universal Baseline Engine</h3>
+                <h3 className="drawer-phase-title">Universal Baseline & Transportation Engine</h3>
                 <p className="drawer-phase-desc">
-                  Generic 100-year dynamic GWP prediction across 259 ICE V5 construction
-                  materials. Combines embodied carbon baselines with global climate-scenario
-                  parameters (extreme weather events, temperature anomaly, sea-level rise,
-                  policy decarbonisation score) via a Random Forest Regressor.
+                  Full lifecycle carbon prediction across 259 ICE V5 construction
+                  materials, logistics fleet emissions (LCA Stage A4), and 100-year dynamic GWP
+                  stress-testing via a trained Random Forest Regressor.
                 </p>
                 <div className="drawer-tags">
                   <span className="drawer-tag teal">ICE V5 Database</span>
                   <span className="drawer-tag teal">Random Forest</span>
-                  <span className="drawer-tag teal">Global Baseline</span>
+                  <span className="drawer-tag teal">LCA Stage A1–A4</span>
+                  <span className="drawer-tag teal">Logistics Fleet</span>
                 </div>
               </div>
 
