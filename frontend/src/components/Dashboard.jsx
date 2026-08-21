@@ -350,17 +350,6 @@ const FLEET_VEHICLES = [
   },
 ];
 
-const DIST_PRESETS = [
-  { label: 'Local (15 km)', value: 15 },
-  { label: 'Regional (60 km)', value: 60 },
-  { label: 'Intercity (150 km)', value: 150 },
-];
-
-const LOAD_PRESETS = [
-  { label: '250 kg', value: 250 },
-  { label: '1,000 kg', value: 1000 },
-  { label: '2,500 kg', value: 2500 },
-];
 
 /* ══════════════════════════════════════════════════════════════
    Main Dashboard
@@ -597,30 +586,21 @@ export default function Dashboard() {
                     </span>
                   </div>
 
-                  <div className="hazard-presets">
-                    {DIST_PRESETS.map(dp => (
-                      <button
-                        key={dp.value}
-                        className={`hazard-preset-btn ${transportParams.distance_km === dp.value ? 'active' : ''}`}
-                        onClick={() => setTransportParams(p => ({ ...p, distance_km: dp.value }))}
-                      >
-                        {dp.label}
-                      </button>
-                    ))}
-                  </div>
-
                   <div className="slider-track-wrap">
                     <div
                       className="slider-fill"
-                      style={{ width: `${(transportParams.distance_km / 300) * 100}%`, background: 'var(--amber)' }}
+                      style={{ width: `${(transportParams.distance_km / 400) * 100}%`, background: 'var(--amber)' }}
                     />
                     <input
-                      type="range" min={1} max={300} step={1}
+                      type="range" min={0} max={400} step={1}
                       value={transportParams.distance_km}
                       onChange={e => setTransportParams(p => ({ ...p, distance_km: parseFloat(e.target.value) }))}
                       className="slider-input"
                       style={{ '--thumb-color': 'var(--amber)' }}
                     />
+                  </div>
+                  <div className="slider-bounds">
+                    <span>0 km</span><span>400 km</span>
                   </div>
                 </div>
 
@@ -635,30 +615,21 @@ export default function Dashboard() {
                     </span>
                   </div>
 
-                  <div className="hazard-presets">
-                    {LOAD_PRESETS.map(lp => (
-                      <button
-                        key={lp.value}
-                        className={`hazard-preset-btn ${transportParams.load_weight_kg === lp.value ? 'active' : ''}`}
-                        onClick={() => setTransportParams(p => ({ ...p, load_weight_kg: lp.value }))}
-                      >
-                        {lp.label}
-                      </button>
-                    ))}
-                  </div>
-
                   <div className="slider-track-wrap">
                     <div
                       className="slider-fill"
                       style={{ width: `${(transportParams.load_weight_kg / 5000) * 100}%`, background: 'var(--teal)' }}
                     />
                     <input
-                      type="range" min={50} max={5000} step={50}
+                      type="range" min={10} max={5000} step={10}
                       value={transportParams.load_weight_kg}
                       onChange={e => setTransportParams(p => ({ ...p, load_weight_kg: parseFloat(e.target.value) }))}
                       className="slider-input"
                       style={{ '--thumb-color': 'var(--teal)' }}
                     />
+                  </div>
+                  <div className="slider-bounds">
+                    <span>10 kg</span><span>5,000 kg</span>
                   </div>
                 </div>
 
