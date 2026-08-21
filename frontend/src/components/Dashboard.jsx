@@ -246,66 +246,18 @@ const REGIONS = [
     active: true,
     phase: 'Phase 1',
   },
-  {
-    id: 'japan',
-    label: 'Japan Localized (JIS / JSCE)',
-    icon: MapPin,
-    active: false,
-    phase: 'Phase 2',
-  },
 ];
 
 const RegionSelector = () => {
-  const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState('global');
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, []);
-
-  const current = REGIONS.find(r => r.id === selected);
+  const current = REGIONS[0];
   const CurrentIcon = current.icon;
 
   return (
-    <div className="region-selector" ref={ref}>
-      <button className="region-btn" onClick={() => setOpen(o => !o)}>
+    <div className="region-selector">
+      <div className="region-btn" style={{ cursor: 'default' }}>
         <CurrentIcon size={13} />
         <span className="region-btn-label">{current.label}</span>
-        <ChevronDown size={12} className={`selector-chevron ${open ? 'open' : ''}`} />
-      </button>
-
-      {open && (
-        <div className="region-dropdown">
-          <p className="region-dropdown-title">Model Regionalization</p>
-          {REGIONS.map(r => {
-            const RIcon = r.icon;
-            return (
-              <button
-                key={r.id}
-                className={`region-item ${
-                  r.id === selected ? 'active' : ''
-                } ${!r.active ? 'disabled' : ''}`}
-                onClick={() => { if (r.active) { setSelected(r.id); setOpen(false); } }}
-                disabled={!r.active}
-              >
-                <div className="region-item-left">
-                  <RIcon size={14} />
-                  <span>{r.label}</span>
-                </div>
-                {r.id === selected && r.active && (
-                  <span className="region-tag selected">Selected</span>
-                )}
-                {!r.active && (
-                  <span className="region-tag upcoming">{r.phase} Under Development</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      </div>
     </div>
   );
 };
@@ -918,24 +870,20 @@ export default function Dashboard() {
         </section>
       </main>
 
-      {/* ── Phase 2 Roadmap Footer Banner ── */}
+      {/* ── Model Architecture Footer Banner ── */}
       <footer className="roadmap-banner">
         <div className="roadmap-banner-inner">
           <div className="roadmap-banner-icon"><Globe size={15} /></div>
           <p className="roadmap-banner-text">
-            <strong>Current system</strong> delivers universal 100-year dynamic GWP and fleet transportation accounting (LCA Stage A1–A4).
-            <span className="roadmap-phase2-note">
-              &nbsp;Phase 2 actively calibrates parameters for Japanese climate hazard matrices
-              (salt corrosion, seismic stress) and local JIS / JSCE material standards.
-            </span>
+            <strong>Current system</strong> delivers universal 100-year dynamic GWP and fleet transportation accounting (LCA Stage A1–A4) across global construction materials.
           </p>
           <button className="roadmap-banner-cta" onClick={() => setDrawerOpen(true)}>
-            View Roadmap <ChevronRight size={13} />
+            View Model Info <ChevronRight size={13} />
           </button>
         </div>
       </footer>
 
-      {/* ── Phase 2 Roadmap Drawer ── */}
+      {/* ── Model Architecture Info Drawer ── */}
       {drawerOpen && (
         <>
           <div className="drawer-overlay" onClick={() => setDrawerOpen(false)} />
@@ -943,7 +891,7 @@ export default function Dashboard() {
             <div className="drawer-header">
               <div className="drawer-title-group">
                 <Globe size={18} className="drawer-icon" />
-                <h2 className="drawer-title">Model Regionalization Roadmap</h2>
+                <h2 className="drawer-title">Model Architecture & LCA Scope</h2>
               </div>
               <button className="drawer-close" onClick={() => setDrawerOpen(false)}>
                 <X size={18} />
@@ -951,11 +899,11 @@ export default function Dashboard() {
             </div>
 
             <div className="drawer-body">
-              {/* Phase 1 */}
+              {/* Universal Baseline */}
               <div className="drawer-phase active">
                 <div className="drawer-phase-header">
                   <span className="drawer-phase-dot active" />
-                  <span className="drawer-phase-label">Phase 1 — Active</span>
+                  <span className="drawer-phase-label">Active Engine</span>
                 </div>
                 <h3 className="drawer-phase-title">Universal Baseline & Transportation Engine</h3>
                 <p className="drawer-phase-desc">
@@ -968,45 +916,6 @@ export default function Dashboard() {
                   <span className="drawer-tag teal">Random Forest</span>
                   <span className="drawer-tag teal">LCA Stage A1–A4</span>
                   <span className="drawer-tag teal">Logistics Fleet</span>
-                </div>
-              </div>
-
-              <div className="drawer-connector" />
-
-              {/* Phase 2 */}
-              <div className="drawer-phase">
-                <div className="drawer-phase-header">
-                  <span className="drawer-phase-dot" />
-                  <span className="drawer-phase-label">Phase 2 — Under Development</span>
-                </div>
-                <h3 className="drawer-phase-title">
-                  <MapPin size={15} /> Japan Localized Engine
-                </h3>
-                <p className="drawer-phase-desc">
-                  Calibration of hazard parameters for the Japanese built environment.
-                  Incorporates salt-induced corrosion accelerants from coastal proximity,
-                  seismic stress fatigue cycles, and humidity-driven carbonation rates into
-                  the GWP penalty model.
-                </p>
-                <div className="drawer-feature-list">
-                  {[
-                    'JIS A 5308 / JSCE-G standards material library',
-                    'Salt corrosion hazard matrix (coastal zoning)',
-                    'Seismic stress fatigue calibration (JMA scale)',
-                    'Humidity & freeze-thaw carbonation modelling',
-                    'J-Credit Scheme & Tokyo Cap-and-Trade integration',
-                  ].map(f => (
-                    <div key={f} className="drawer-feature">
-                      <Lock size={11} className="drawer-feature-lock" />
-                      <span>{f}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="drawer-tags">
-                  <span className="drawer-tag amber">JIS Standards</span>
-                  <span className="drawer-tag amber">JSCE</span>
-                  <span className="drawer-tag amber">Seismic Hazard</span>
-                  <span className="drawer-tag amber">Salt Corrosion</span>
                 </div>
               </div>
             </div>

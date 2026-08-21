@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Vardan — Technical Report & Documentation</title>
+  <style>
+    :root {
+      --primary: #0f172a;
+      --teal: #0d9488;
+      --teal-light: #f0fdfa;
+      --amber: #d97706;
+      --amber-light: #fffbeb;
+      --cyan: #0284c7;
+      --cyan-light: #f0f9ff;
+      --text: #334155;
+      --text-dark: #0f172a;
+      --border: #e2e8f0;
+      --bg-card: #ffffff;
+      --bg-page: #f8fafc;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: var(--text);
+      background-color: var(--bg-page);
+      padding: 30px 15px;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      background: var(--bg-card);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      border: 1px solid var(--border);
+      padding: 45px 50px;
+    }
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid var(--teal);
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+
+    .title-group h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text-dark);
+      letter-spacing: -0.5px;
+    }
+
+    .title-group p {
+      font-size: 14px;
+      color: var(--teal);
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .print-btn {
+      background: var(--teal);
+      color: white;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
+      transition: background 0.15s;
+    }
+
+    .print-btn:hover { background: #0f766e; }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin: 28px 0 12px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    p { margin-bottom: 12px; font-size: 14px; }
+
+    ul { margin: 8px 0 16px 20px; font-size: 14px; }
+    li { margin-bottom: 6px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px 0;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      text-align: left;
+    }
+
+    th {
+      background: var(--primary);
+      color: white;
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) { background-color: #f8fafc; }
+
+    .highlight-row {
+      background-color: var(--teal-light) !important;
+      font-weight: 700;
+      color: #115e59;
+    }
+
+    .formula-box {
+      background: var(--cyan-light);
+      border-left: 4px solid var(--cyan);
+      padding: 14px 18px;
+      border-radius: 0 6px 6px 0;
+      margin: 16px 0;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 13.5px;
+      color: #0369a1;
+      line-height: 1.6;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-teal { background: var(--teal-light); color: var(--teal); border: 1px solid rgba(13,148,136,0.3); }
+    .badge-amber { background: var(--amber-light); color: var(--amber); border: 1px solid rgba(217,119,6,0.3); }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin: 16px 0;
+    }
+
+    .stat-card {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .stat-card h4 { font-size: 12px; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
+    .stat-card .val { font-size: 18px; font-weight: 700; color: var(--text-dark); }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .container { border: none; box-shadow: none; padding: 0; max-width: 100%; }
+      .print-btn { display: none; }
+      .header-bar { border-bottom: 2px solid #000; }
+      th { background: #1e293b !important; color: white !important; -webkit-print-color-adjust: exact; }
+      .formula-box, .stat-card, tr:nth-child(even), .highlight-row { -webkit-print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <div class="header-bar">
+      <div class="title-group">
+        <h1>PROJECT VARDAN</h1>
+        <p>Materials Intelligence, Climate Resilience & Fleet Logistics (LCA Stage A1–A4 & B1–B7)</p>
+      </div>
+      <button class="print-btn" onclick="window.print()">
+        🖨️ Print / Save as PDF
+      </button>
+    </div>
+
+    <h2>1. Executive Overview</h2>
+    <p>
+      <strong>Project Vardan</strong> is an embodied carbon intelligence and climate resilience platform engineered for the construction industry.
+      Unlike traditional static calculators that only consider manufacturing emissions (A1–A3), Vardan unifies <strong>three integrated Life Cycle Assessment stages</strong> under international standards (<strong>EN 15978 / ISO 21930 / ICE V5</strong>):
+    </p>
+    <ul>
+      <li><strong>LCA Module A1–A3 (Product Stage):</strong> Baseline embodied carbon extracted from the ICE V5 database across 259 construction materials.</li>
+      <li><strong>LCA Module A4 (Construction Stage — Transport):</strong> Fleet logistics emissions calculated dynamically based on curb weight, cargo payload, and transit distance.</li>
+      <li><strong>LCA Module B1–B7 (Use Stage — Operational Degradation):</strong> 100-year dynamic Global Warming Potential (GWP) simulated via a Random Forest ML model under regional climate calamity stress.</li>
+    </ul>
+
+    <h2>2. Vehicle Fleet Database (LCA Stage A4)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Vehicle Type</th>
+          <th>Curb Weight</th>
+          <th>Base Emission Rate</th>
+          <th>Fuel / Energy Type</th>
+          <th>Typical Application</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Cargo Bike</strong></td>
+          <td>120 kg</td>
+          <td>25.0 g CO₂ / km</td>
+          <td>Human / Micro-e-cargo</td>
+          <td>Short-range urban micro-logistics</td>
+        </tr>
+        <tr>
+          <td><strong>Electric Van</strong></td>
+          <td>1,500 kg</td>
+          <td>40.0 g CO₂ / km</td>
+          <td>Grid Electricity (Zero Tailpipe)</td>
+          <td>Clean urban commercial freight</td>
+        </tr>
+        <tr>
+          <td><strong>CNG Truck</strong></td>
+          <td>970 kg</td>
+          <td>120.0 g CO₂ / km</td>
+          <td>Compressed Natural Gas</td>
+          <td>Medium utility regional haulage</td>
+        </tr>
+        <tr>
+          <td><strong>Diesel Van</strong></td>
+          <td>2,000 kg</td>
+          <td>180.0 g CO₂ / km</td>
+          <td>Heavy-Duty Diesel</td>
+          <td>Standard industrial site delivery</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>3. Mathematical Formulation</h2>
+    <div class="formula-box">
+      <strong>1. Total Gross Weight:</strong> W_total = W_vehicle + W_load<br>
+      <strong>2. Dynamic Load Multiplier:</strong> &gamma; = W_total / W_vehicle = 1 + (W_load / W_vehicle)<br>
+      <strong>3. Total Journey Emissions:</strong> Emissions_g = Base_Rate &times; Distance_km &times; &gamma;<br>
+      <strong>4. Unit Conversion:</strong> Emissions_kg = Emissions_g / 1000<br>
+      <strong>5. Normalized Material Factor:</strong> E_norm = Emissions_kg / W_load &nbsp;(kg CO₂e / kg material)<br>
+      <strong>6. Lifecycle Total:</strong> Total_Carbon = Base_GWP (A1-A3) + E_norm (A4) + Calamity_Penalty (B1-B7)
+    </div>
+
+    <h2>4. Worked Numerical Verification</h2>
+    <p><strong>Scenario:</strong> Transporting <strong>1,000 kg</strong> of <em>Blast Furnace Slag Cement</em> over <strong>50 km</strong> using a <strong>Diesel Van</strong>:</p>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Step / Parameter</th>
+          <th>Formula / Source</th>
+          <th>Value</th>
+          <th>Unit</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Vehicle Curb Weight</td>
+          <td>Fleet Database (Diesel Van)</td>
+          <td>2,000.00</td>
+          <td>kg</td>
+        </tr>
+        <tr>
+          <td>Material Payload</td>
+          <td>User Input</td>
+          <td>1,000.00</td>
+          <td>kg</td>
+        </tr>
+        <tr>
+          <td>Total Gross Weight</td>
+          <td>2,000 + 1,000</td>
+          <td>3,000.00</td>
+          <td>kg</td>
+        </tr>
+        <tr>
+          <td>Weight Multiplier (&gamma;)</td>
+          <td>3,000 / 2,000</td>
+          <td>1.500</td>
+          <td>&times; multiplier</td>
+        </tr>
+        <tr>
+          <td>Transit Distance</td>
+          <td>User Input</td>
+          <td>50.00</td>
+          <td>km</td>
+        </tr>
+        <tr>
+          <td>Base Emission Rate</td>
+          <td>Fleet Database</td>
+          <td>180.00</td>
+          <td>g / km</td>
+        </tr>
+        <tr>
+          <td>Total Trip Emissions (g)</td>
+          <td>180 &times; 50 &times; 1.500</td>
+          <td>13,500.00</td>
+          <td>g CO₂</td>
+        </tr>
+        <tr>
+          <td>Total Trip Emissions (kg)</td>
+          <td>13,500 / 1000</td>
+          <td>13.50</td>
+          <td>kg CO₂</td>
+        </tr>
+        <tr>
+          <td>Normalized Material Transport (A4)</td>
+          <td>13.50 kg / 1,000 kg</td>
+          <td><strong>0.0135</strong></td>
+          <td>kg CO₂e / kg</td>
+        </tr>
+        <tr>
+          <td>Initial Embodied Carbon (A1–A3)</td>
+          <td>ICE V5 Database</td>
+          <td>0.2500</td>
+          <td>kg CO₂e / kg</td>
+        </tr>
+        <tr>
+          <td>100-Year Dynamic Calamity GWP</td>
+          <td>Random Forest Regressor</td>
+          <td>0.2627</td>
+          <td>kg CO₂e / kg</td>
+        </tr>
+        <tr class="highlight-row">
+          <td>Net 100-Year Lifecycle Carbon</td>
+          <td>0.2627 + 0.0135</td>
+          <td><strong>0.2762</strong></td>
+          <td>kg CO₂e / kg</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>5. API Endpoints Reference</h2>
+    <ul>
+      <li><code>GET /api/v1/materials</code> — Returns all 259 ICE V5 construction materials.</li>
+      <li><code>GET /api/v1/transport/vehicles</code> — Returns supported vehicle fleet specifications.</li>
+      <li><code>POST /api/v1/transport/calculate</code> — Standalone transport journey emissions calculation.</li>
+      <li><code>POST /api/v1/predict</code> — Full lifecycle prediction combining A1–A3 Embodied, A4 Transport, and 100-year B1–B7 Calamity GWP.</li>
+    </ul>
+
+    <div style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 15px; font-size: 12px; color: #94a3b8; text-align: center;">
+      Project Vardan · Materials Intelligence Platform · Generated for Distribution & Review
+    </div>
+
+  </div>
+
+</body>
+</html>
