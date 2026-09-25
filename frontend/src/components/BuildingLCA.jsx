@@ -196,7 +196,38 @@ const BuildingLCA = () => {
                 const normalOptionsCurated = cls.materials.filter(m => !m.is_green).map(m => m.name);
                 const greenOptionsCurated = cls.materials.filter(m => m.is_green).map(m => m.name);
                 
-                // Helper to classify materials dynamically
+                // Helper to classify materials dynamically by their role
+                const matchesClass = (matName, classId) => {
+                  const n = matName.toLowerCase();
+                  switch (classId) {
+                    case 'substructure':
+                      return n.includes('concrete') || n.includes('cement') || n.includes('mortar') || 
+                             n.includes('screed') || n.includes('aggregate') || n.includes('gravel') || 
+                             n.includes('sand') || n.includes('foundation') || n.includes('slab') ||
+                             n.includes('asphalt');
+                    case 'superstructure':
+                      return n.includes('steel') || n.includes('iron') || n.includes('timber') || 
+                             n.includes('wood') || n.includes('beam') || n.includes('column') || 
+                             n.includes('structural') || n.includes('rebar') || n.includes('joist') || 
+                             n.includes('frame');
+                    case 'facade':
+                      return n.includes('brick') || n.includes('glass') || n.includes('glazing') || 
+                             n.includes('block') || n.includes('curtain') || n.includes('facade') || 
+                             n.includes('cladding') || n.includes('window') || n.includes('earth') || 
+                             n.includes('hemp') || n.includes('masonry') || n.includes('stone') ||
+                             n.includes('aluminium');
+                    case 'roofing_insulation':
+                      return n.includes('insulation') || n.includes('foam') || n.includes('wool') || 
+                             n.includes('board') || n.includes('roof') || n.includes('tile') || 
+                             n.includes('membrane') || n.includes('carpet') || n.includes('render') || 
+                             n.includes('paint') || n.includes('plaster') || n.includes('gypsum') || 
+                             n.includes('ceiling') || n.includes('finish');
+                    default:
+                      return true;
+                  }
+                };
+
+                // Helper to classify green materials dynamically
                 const isGreenKeyword = (name) => {
                   const n = name.toLowerCase();
                   return n.includes('timber') || n.includes('wood') || n.includes('bamboo') || 
@@ -206,9 +237,12 @@ const BuildingLCA = () => {
                          n.includes('pozzolan') || n.includes('clay block');
                 };
 
+                // Filter the entire API database to ONLY those materials relevant for this specific class
+                const classRelevantMaterials = allMaterials.filter(m => matchesClass(m, cls.class_id));
+
                 // Create strictly disjoint lists
-                const allNormal = allMaterials.filter(m => !isGreenKeyword(m) && !normalOptionsCurated.includes(m) && !greenOptionsCurated.includes(m));
-                const allGreen = allMaterials.filter(m => isGreenKeyword(m) && !greenOptionsCurated.includes(m) && !normalOptionsCurated.includes(m));
+                const allNormal = classRelevantMaterials.filter(m => !isGreenKeyword(m) && !normalOptionsCurated.includes(m) && !greenOptionsCurated.includes(m));
+                const allGreen = classRelevantMaterials.filter(m => isGreenKeyword(m) && !greenOptionsCurated.includes(m) && !normalOptionsCurated.includes(m));
 
                 const normalOptions = [...normalOptionsCurated, ...allNormal];
                 const greenOptions = [...greenOptionsCurated, ...allGreen];
