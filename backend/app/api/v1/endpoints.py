@@ -27,11 +27,17 @@ from app.schemas.transport_schema import (
     VehicleInfo,
     VehicleListResponse,
 )
+from app.schemas.building_schema import (
+    BuildingLCARequest,
+    BuildingLCAResponse,
+    MaterialClassesResponse,
+)
 from app.services.material_service import material_service
 from app.services.prediction_service import prediction_service
 from app.services.transport_service import transport_service
 from app.services.reasoning_service import reasoning_service
 from app.services.alternatives_service import alternatives_service
+from app.services.building_service import building_service
 
 router = APIRouter(prefix="/api/v1", tags=["GWP & Logistics Predictions"])
 
@@ -214,3 +220,34 @@ async def get_green_alternatives(material_name: str = Path(...)) -> AlternativeR
         original_material=material_name,
         alternatives=alts
     )
+
+
+# ---------------------------------------------------------------------------
+# GET /api/v1/building/classes
+# ---------------------------------------------------------------------------
+@router.get(
+    "/building/classes",
+    response_model=MaterialClassesResponse,
+    summary="Get the 4 structural & envelope material classes for Whole Building LCA",
+    description="Returns the 4 building classes (Substructure, Superstructure, Facade, Roofing/Insulation) with their LCA roles and material options."
+)
+async def get_building_material_classes() -> MaterialClassesResponse:
+    return building_service.get_material_classes()
+
+
+# ---------------------------------------------------------------------------
+# POST /api/v1/building/calculate
+# ---------------------------------------------------------------------------
+@router.post(
+    "/building/calculate",
+    response_model=BuildingLCAResponse,
+    summary="Calculate Whole Building Lifecycle Assessment (25, 50, and 100 years)",
+    description=(
+        "Accepts 1 material selection from each of the 4 building classes, along with "
+        "gross floor area and climate/logistics parameters. Computes total building emissions "
+        "across A1-A3 (Procurement), A4 (Logistics), A5 (Construction), B2-B5 (Maintenance), "
+        "B1/B7 (Dynamic Calamity Stress), and C1-C4 (Demolition) over 25, 50, and 100-year horizons."
+    )
+)
+async def calculate_building_lca(request: BuildingLCARequest) -> BuildingLCAResponse:
+    return building_service.calculate_whole_building_lca(request)

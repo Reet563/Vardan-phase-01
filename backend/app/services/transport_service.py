@@ -34,6 +34,12 @@ VEHICLES: dict[str, dict[str, Any]] = {
         "icon": "Truck",
         "description": "Standard heavy-duty diesel transport van",
     },
+    "Heavy Freight Truck": {
+        "vehicle_weight_kg": 14000.0,
+        "base_emission_g_per_km": 680.0,
+        "icon": "Truck",
+        "description": "Heavy multi-axle freight carrier for bulk materials",
+    },
 }
 
 

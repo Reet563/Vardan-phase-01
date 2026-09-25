@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell, ReferenceLine
+  BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Cell, ReferenceLine, Legend
 } from 'recharts';
 import {
   Leaf, Thermometer, Waves, Wind, ShieldCheck,
   AlertTriangle, Loader2, ChevronDown, Search, X,
   TrendingUp, TrendingDown, Minus, FlaskConical,
   Globe, MapPin, Lock, Info, ChevronRight, Zap,
-  Truck, Fuel, Bike, Navigation, Scale, Box, CheckCircle2
+  Truck, Fuel, Bike, Navigation, Scale, Box, CheckCircle2,
+  Building2, Calendar, Layers, BarChart3
 } from 'lucide-react';
+import BuildingLCA from './BuildingLCA.jsx';
 import './Dashboard.css';
 
 const API = (import.meta.env.VITE_API_URL || '') + '/api/v1';
@@ -21,11 +23,16 @@ const CustomTooltip = ({ active, payload, label }) => {
   return (
     <div className="chart-tooltip">
       <p className="chart-tooltip-label">{label}</p>
-      {payload.map((p, i) => (
-        <p key={i} style={{ color: p.color }}>
-          {p.name}: <strong>{p.value.toFixed(4)} kg CO₂e/kg</strong>
-        </p>
-      ))}
+      {payload.map((p, i) => {
+        if (p.value === null || p.value === undefined) return null;
+        const formatted = typeof p.value === 'number' ? p.value.toFixed(4) : p.value;
+        return (
+          <p key={i} style={{ color: p.color || '#38bdf8', margin: '4px 0', fontSize: '0.8rem' }}>
+            <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', backgroundColor: p.color || '#38bdf8', marginRight: 6 }} />
+            {p.name}: <strong>{formatted} kg CO₂e/kg</strong>
+          </p>
+        );
+      })}
     </div>
   );
 };
@@ -333,6 +340,9 @@ export default function Dashboard() {
   const [error, setError]           = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   
+  const [mainTab, setMainTab]       = useState('material'); // 'material' | 'building'
+  const [chartMode, setChartMode]   = useState('stages');   // 'stages' | 'trajectory'
+
   const [alternatives, setAlternatives] = useState([]);
   const [selectedAlternative, setSelectedAlternative] = useState('');
 
@@ -411,26 +421,26 @@ export default function Dashboard() {
         {
           name: '1. Upfront Embodied\n(A1–A3)',
           shortName: 'A1–A3 Embodied',
-          Original: result.base_gwp_A1A3,
-          Alternative: altResult ? altResult.base_gwp_A1A3 : 0,
+          Original: Number(result.base_gwp_A1A3 ?? 0),
+          ...(altResult ? { Alternative: Number(altResult.base_gwp_A1A3 ?? 0) } : {}),
         },
         {
           name: '2. Logistics Transit\n(A4)',
           shortName: 'A4 Transport',
-          Original: result.transport.per_kg_transport_co2e,
-          Alternative: altResult ? altResult.transport.per_kg_transport_co2e : 0,
+          Original: Number(result.transport.per_kg_transport_co2e ?? 0),
+          ...(altResult?.transport ? { Alternative: Number(altResult.transport.per_kg_transport_co2e ?? 0) } : {}),
         },
         {
           name: '3. 100-yr Dynamic\n(B1–B7 Calamity)',
           shortName: '100-yr Calamity',
-          Original: result.predicted_100yr_gwp,
-          Alternative: altResult ? altResult.predicted_100yr_gwp : 0,
+          Original: Number(result.predicted_100yr_gwp ?? 0),
+          ...(altResult ? { Alternative: Number(altResult.predicted_100yr_gwp ?? 0) } : {}),
         },
         {
           name: '4. Total Lifecycle\n(Cradle-to-Lifespan)',
           shortName: 'Net Lifecycle',
-          Original: result.total_lifecycle_carbon || (result.predicted_100yr_gwp + result.transport.per_kg_transport_co2e),
-          Alternative: altResult ? (altResult.total_lifecycle_carbon || (altResult.predicted_100yr_gwp + altResult.transport.per_kg_transport_co2e)) : 0,
+          Original: Number(result.total_lifecycle_carbon || (result.predicted_100yr_gwp + result.transport.per_kg_transport_co2e)),
+          ...(altResult ? { Alternative: Number(altResult.total_lifecycle_carbon || (altResult.predicted_100yr_gwp + (altResult.transport?.per_kg_transport_co2e || 0))) } : {}),
         },
       ];
     } else {
@@ -438,17 +448,66 @@ export default function Dashboard() {
         {
           name: 'Baseline GWP\n(A1–A3)',
           shortName: 'Baseline A1-A3',
-          Original: result.base_gwp_A1A3,
-          Alternative: altResult ? altResult.base_gwp_A1A3 : 0,
+          Original: Number(result.base_gwp_A1A3 ?? 0),
+          ...(altResult ? { Alternative: Number(altResult.base_gwp_A1A3 ?? 0) } : {}),
         },
         {
           name: 'Predicted 100-yr\nDynamic GWP',
           shortName: '100-yr Predicted',
-          Original: result.predicted_100yr_gwp,
-          Alternative: altResult ? altResult.predicted_100yr_gwp : 0,
+          Original: Number(result.predicted_100yr_gwp ?? 0),
+          ...(altResult ? { Alternative: Number(altResult.predicted_100yr_gwp ?? 0) } : {}),
         },
       ];
     }
+  }
+
+  /* 100-Year Dynamic Trajectory Data */
+  let trajectoryData = [];
+  if (result) {
+    const origBase = Number(result.base_gwp_A1A3 ?? 0);
+    const origTransport = Number(result.transport?.per_kg_transport_co2e ?? 0);
+    const origPred = Number(result.predicted_100yr_gwp ?? origBase);
+    const origPenalty = Math.max(0, origPred - origBase);
+    const origYr0 = origBase + origTransport;
+
+    const altBase = altResult ? Number(altResult.base_gwp_A1A3 ?? 0) : null;
+    const altTransport = altResult?.transport ? Number(altResult.transport.per_kg_transport_co2e ?? 0) : 0;
+    const altPred = altResult ? Number(altResult.predicted_100yr_gwp ?? altBase) : null;
+    const altPenalty = altPred !== null ? Math.max(0, altPred - altBase) : 0;
+    const altYr0 = altBase !== null ? altBase + altTransport : null;
+
+    trajectoryData = [
+      {
+        year: 'Year 0 (Handover)',
+        stage: 'As-Built (A1-A4)',
+        Original: Number(origYr0.toFixed(4)),
+        ...(altYr0 !== null ? { Alternative: Number(altYr0.toFixed(4)) } : {})
+      },
+      {
+        year: 'Year 25 (Horizon I)',
+        stage: '25-yr Horizon',
+        Original: Number((origYr0 + origPenalty * 0.25).toFixed(4)),
+        ...(altYr0 !== null ? { Alternative: Number((altYr0 + altPenalty * 0.25).toFixed(4)) } : {})
+      },
+      {
+        year: 'Year 50 (Renovation)',
+        stage: '50-yr Horizon',
+        Original: Number((origYr0 + origPenalty * 0.50).toFixed(4)),
+        ...(altYr0 !== null ? { Alternative: Number((altYr0 + altPenalty * 0.50).toFixed(4)) } : {})
+      },
+      {
+        year: 'Year 75 (Refit)',
+        stage: '75-yr Horizon',
+        Original: Number((origYr0 + origPenalty * 0.75).toFixed(4)),
+        ...(altYr0 !== null ? { Alternative: Number((altYr0 + altPenalty * 0.75).toFixed(4)) } : {})
+      },
+      {
+        year: 'Year 100 (End of Life)',
+        stage: '100-yr Lifespan',
+        Original: Number((origYr0 + origPenalty).toFixed(4)),
+        ...(altYr0 !== null ? { Alternative: Number((altYr0 + altPenalty).toFixed(4)) } : {})
+      },
+    ];
   }
 
   const penalty = result ? result.calamity_carbon_penalty : undefined;
@@ -475,6 +534,23 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* ── Tab Switcher: Material vs Whole Building ── */}
+        <nav className="header-nav-tabs">
+          <button
+            className={`nav-tab-btn ${mainTab === 'material' ? 'active' : ''}`}
+            onClick={() => setMainTab('material')}
+          >
+            <FlaskConical size={14} /> Material LCA & Alternatives
+          </button>
+          <button
+            className={`nav-tab-btn ${mainTab === 'building' ? 'active' : ''}`}
+            onClick={() => setMainTab('building')}
+          >
+            <Building2 size={14} /> Whole Building LCA (25, 50 & 100 Yrs)
+            <span className="new-tab-tag">NEW</span>
+          </button>
+        </nav>
+
         <div className="header-right">
           <RegionSelector />
           <div className="header-badge">
@@ -491,7 +567,12 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="main-grid">
+      {mainTab === 'building' ? (
+        <main className="main-building-wrap">
+          <BuildingLCA />
+        </main>
+      ) : (
+        <main className="main-grid">
 
         {/* ══ LEFT PANEL: Controls ══ */}
         <aside className="panel panel-controls">
@@ -792,59 +873,140 @@ export default function Dashboard() {
             <div className="chart-header">
               <div>
                 <h2 className="chart-title">Lifecycle Carbon Footprint Trajectory</h2>
-                <p className="chart-subtitle">Modular breakdown across material manufacturing, logistics transit, and 100-year operational lifespan</p>
+                <p className="chart-subtitle">
+                  {chartMode === 'stages'
+                    ? 'Modular breakdown across material manufacturing (A1–A3), transit (A4), and 100-year operational lifespan'
+                    : 'Dynamic cumulative emissions across Year 0, 25, 50, 75, and 100-year operational horizons'}
+                </p>
               </div>
-              {result && (
-                <span className="chart-material-tag">{result.material_name}</span>
-              )}
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                {result && (
+                  <div className="chart-view-toggle">
+                    <button
+                      className={`chart-toggle-btn ${chartMode === 'stages' ? 'active' : ''}`}
+                      onClick={() => setChartMode('stages')}
+                      title="View Modular Stage Breakdown"
+                    >
+                      <Layers size={13} style={{ marginRight: 4 }} /> Stage Breakdown
+                    </button>
+                    <button
+                      className={`chart-toggle-btn ${chartMode === 'trajectory' ? 'active' : ''}`}
+                      onClick={() => setChartMode('trajectory')}
+                      title="View 100-Year Dynamic Trajectory"
+                    >
+                      <Calendar size={13} style={{ marginRight: 4 }} /> 100-Yr Trajectory
+                    </button>
+                  </div>
+                )}
+                {result && (
+                  <span className="chart-material-tag">{result.material_name}</span>
+                )}
+              </div>
             </div>
 
             {result ? (
-              <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={chartData} barCategoryGap="30%" margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
-                  <defs>
-                    <linearGradient id="gradBaseline" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#00d4aa" stopOpacity={0.9} />
-                      <stop offset="100%" stopColor="#00d4aa" stopOpacity={0.4} />
-                    </linearGradient>
-                    <linearGradient id="gradTransport" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.9} />
-                      <stop offset="100%" stopColor="#fbbf24" stopOpacity={0.4} />
-                    </linearGradient>
-                    <linearGradient id="gradPredicted" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.9} />
-                      <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.4} />
-                    </linearGradient>
-                    <linearGradient id="gradTotal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.9} />
-                      <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.4} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
-                  <XAxis
-                    dataKey="shortName"
-                    tick={{ fill: 'var(--text-secondary)', fontSize: 12, fontFamily: 'Inter' }}
-                    axisLine={false} tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fill: 'var(--text-muted)', fontSize: 11, fontFamily: 'Inter' }}
-                    axisLine={false} tickLine={false}
-                    tickFormatter={v => v.toFixed(3)}
-                    label={{ value: 'kg CO₂e / kg', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11, dy: 50 }}
-                  />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(56,90,150,0.1)' }} />
-                  <Bar dataKey="Original" name={result.material_name} fill="url(#gradTotal)" radius={[8, 8, 0, 0]} maxBarSize={60} />
-                  {altResult && (
-                    <Bar dataKey="Alternative" name={altResult.material_name} fill="url(#gradBaseline)" radius={[8, 8, 0, 0]} maxBarSize={60} />
-                  )}
-                  <ReferenceLine
-                    y={result.base_gwp_A1A3}
-                    stroke="rgba(0,212,170,0.4)"
-                    strokeDasharray="6 3"
-                    label={{ value: 'A1-A3 Base', fill: 'var(--teal)', fontSize: 11, position: 'right' }}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              chartMode === 'stages' ? (
+                <ResponsiveContainer width="100%" height={320}>
+                  <BarChart data={chartData} barCategoryGap="30%" margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                    <defs>
+                      <linearGradient id="gradBaseline" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#00d4aa" stopOpacity={0.9} />
+                        <stop offset="100%" stopColor="#00d4aa" stopOpacity={0.4} />
+                      </linearGradient>
+                      <linearGradient id="gradTransport" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.9} />
+                        <stop offset="100%" stopColor="#fbbf24" stopOpacity={0.4} />
+                      </linearGradient>
+                      <linearGradient id="gradPredicted" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.9} />
+                        <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.4} />
+                      </linearGradient>
+                      <linearGradient id="gradTotal" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.9} />
+                        <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.4} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
+                    <XAxis
+                      dataKey="shortName"
+                      tick={{ fill: 'var(--text-secondary)', fontSize: 12, fontFamily: 'Inter' }}
+                      axisLine={false} tickLine={false}
+                    />
+                    <YAxis
+                      domain={['auto', 'auto']}
+                      tick={{ fill: 'var(--text-muted)', fontSize: 11, fontFamily: 'Inter' }}
+                      axisLine={false} tickLine={false}
+                      tickFormatter={v => (typeof v === 'number' ? v.toFixed(3) : v)}
+                      label={{ value: 'kg CO₂e / kg', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11, dy: 50 }}
+                    />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(56,90,150,0.1)' }} />
+                    <Legend verticalAlign="top" height={36} wrapperStyle={{ paddingBottom: 10 }} />
+                    <Bar dataKey="Original" name={result.material_name} fill="url(#gradTotal)" radius={[8, 8, 0, 0]} maxBarSize={60} />
+                    {altResult && (
+                      <Bar dataKey="Alternative" name={altResult.material_name} fill="url(#gradBaseline)" radius={[8, 8, 0, 0]} maxBarSize={60} />
+                    )}
+                    {typeof result.base_gwp_A1A3 === 'number' && (
+                      <ReferenceLine
+                        y={result.base_gwp_A1A3}
+                        stroke="rgba(0,212,170,0.5)"
+                        strokeDasharray="6 3"
+                        label={{ value: 'A1-A3 Base', fill: 'var(--teal)', fontSize: 11, position: 'right' }}
+                      />
+                    )}
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <ResponsiveContainer width="100%" height={320}>
+                  <AreaChart data={trajectoryData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                    <defs>
+                      <linearGradient id="gradTrajOrig" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.8} />
+                        <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.05} />
+                      </linearGradient>
+                      <linearGradient id="gradTrajAlt" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#00d4aa" stopOpacity={0.8} />
+                        <stop offset="100%" stopColor="#00d4aa" stopOpacity={0.05} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
+                    <XAxis
+                      dataKey="year"
+                      tick={{ fill: 'var(--text-secondary)', fontSize: 11, fontFamily: 'Inter' }}
+                      axisLine={false} tickLine={false}
+                    />
+                    <YAxis
+                      domain={['auto', 'auto']}
+                      tick={{ fill: 'var(--text-muted)', fontSize: 11, fontFamily: 'Inter' }}
+                      axisLine={false} tickLine={false}
+                      tickFormatter={v => (typeof v === 'number' ? v.toFixed(3) : v)}
+                      label={{ value: 'Cumulative kg CO₂e / kg', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11, dy: 60 }}
+                    />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(56,90,150,0.1)' }} />
+                    <Legend verticalAlign="top" height={36} wrapperStyle={{ paddingBottom: 10 }} />
+                    <Area
+                      type="monotone"
+                      dataKey="Original"
+                      name={result.material_name}
+                      stroke="#a78bfa"
+                      strokeWidth={3}
+                      fill="url(#gradTrajOrig)"
+                      dot={{ r: 4, fill: '#a78bfa' }}
+                    />
+                    {altResult && (
+                      <Area
+                        type="monotone"
+                        dataKey="Alternative"
+                        name={altResult.material_name}
+                        stroke="#00d4aa"
+                        strokeWidth={2.5}
+                        fill="url(#gradTrajAlt)"
+                        dot={{ r: 4, fill: '#00d4aa' }}
+                      />
+                    )}
+                  </AreaChart>
+                </ResponsiveContainer>
+              )
             ) : (
               <div className="chart-empty">
                 <div className="chart-empty-icon">
@@ -915,6 +1077,7 @@ export default function Dashboard() {
 
         </section>
       </main>
+      )}
 
       {/* ── Model Architecture Footer Banner ── */}
       <footer className="roadmap-banner">
