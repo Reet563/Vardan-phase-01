@@ -196,11 +196,22 @@ const BuildingLCA = () => {
                 const normalOptionsCurated = cls.materials.filter(m => !m.is_green).map(m => m.name);
                 const greenOptionsCurated = cls.materials.filter(m => m.is_green).map(m => m.name);
                 
-                const otherNormal = allMaterials.filter(m => !normalOptionsCurated.includes(m));
-                const normalOptions = [...normalOptionsCurated, ...otherNormal];
-                
-                const otherGreen = allMaterials.filter(m => !greenOptionsCurated.includes(m));
-                const greenOptions = [...greenOptionsCurated, ...otherGreen];
+                // Helper to classify materials dynamically
+                const isGreenKeyword = (name) => {
+                  const n = name.toLowerCase();
+                  return n.includes('timber') || n.includes('wood') || n.includes('bamboo') || 
+                         n.includes('recycled') || n.includes('hemp') || n.includes('earth') || 
+                         n.includes('straw') || n.includes('mycelium') || n.includes('bio') || 
+                         n.includes('lc3') || n.includes('ggbs') || n.includes('fly ash') ||
+                         n.includes('pozzolan') || n.includes('clay block');
+                };
+
+                // Create strictly disjoint lists
+                const allNormal = allMaterials.filter(m => !isGreenKeyword(m) && !normalOptionsCurated.includes(m) && !greenOptionsCurated.includes(m));
+                const allGreen = allMaterials.filter(m => isGreenKeyword(m) && !greenOptionsCurated.includes(m) && !normalOptionsCurated.includes(m));
+
+                const normalOptions = [...normalOptionsCurated, ...allNormal];
+                const greenOptions = [...greenOptionsCurated, ...allGreen];
 
                 return (
                   <div key={cls.class_id} className="class-section" style={{marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border-color)'}}>
