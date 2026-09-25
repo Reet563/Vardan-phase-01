@@ -68,7 +68,13 @@ const DEFAULT_CLASSES = [
 
 const BuildingLCA = () => {
   const [classes, setClasses] = useState(DEFAULT_CLASSES);
-  const [selectedMaterials, setSelectedMaterials] = useState({
+  const [selectedNormalMaterials, setSelectedNormalMaterials] = useState({
+    substructure: 'Concrete (Ready mix - general)',
+    superstructure: 'Reinforced Concrete (C30/37 structural)',
+    facade: 'Standard Clay Facing Brick',
+    roofing_insulation: 'Extruded Polystyrene (XPS) Rigid Foam'
+  });
+  const [selectedGreenMaterials, setSelectedGreenMaterials] = useState({
     substructure: 'Low-carbon concrete with LC3',
     superstructure: 'Cross-Laminated Timber (CLT)',
     facade: 'Hempcrete block, density 300 kg/m3',
@@ -89,7 +95,8 @@ const BuildingLCA = () => {
 
   // Results & Calculation State
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+  const [resultNormal, setResultNormal] = useState(null);
+  const [resultGreen, setResultGreen] = useState(null);
   const [error, setError] = useState(null);
   const [activeChartTab, setActiveChartTab] = useState('trajectory'); // 'trajectory' | 'stages' | 'classes'
 
@@ -110,22 +117,15 @@ const BuildingLCA = () => {
     handleCalculate();
   }, []);
 
-  const handleSelectMaterial = (classId, materialName) => {
-    setSelectedMaterials(prev => ({
-      ...prev,
-      [classId]: materialName
-    }));
-  };
-
   const handleCalculate = async () => {
     setLoading(true);
     setError(null);
     try {
-      const payload = {
-        substructure: { material_name: selectedMaterials.substructure },
-        superstructure: { material_name: selectedMaterials.superstructure },
-        facade: { material_name: selectedMaterials.facade },
-        roofing_insulation: { material_name: selectedMaterials.roofing_insulation },
+      const getPayload = (materials) => ({
+        substructure: { material_name: materials.substructure },
+        superstructure: { material_name: materials.superstructure },
+        facade: { material_name: materials.facade },
+        roofing_insulation: { material_name: materials.roofing_insulation },
         gross_floor_area_m2: Number(gfa),
         building_type: buildingType,
         transit_distance_km: Number(transitDistance),
@@ -134,10 +134,14 @@ const BuildingLCA = () => {
         extreme_weather_events: Number(extremeEvents),
         sea_level_rise: Number(seaLevelRise),
         policy_score: Number(policyScore),
-      };
+      });
 
-      const res = await axios.post(`${API}/building/calculate`, payload);
-      setResult(res.data);
+      const [resNormal, resGreen] = await Promise.all([
+        axios.post(`${API}/building/calculate`, getPayload(selectedNormalMaterials)),
+        axios.post(`${API}/building/calculate`, getPayload(selectedGreenMaterials))
+      ]);
+      setResultNormal(resNormal.data);
+      setResultGreen(resGreen.data);
     } catch (err) {
       console.error('Building LCA error:', err);
       setError(err.response?.data?.detail || 'Failed to calculate whole building LCA. Check connection.');
@@ -146,70 +150,7 @@ const BuildingLCA = () => {
     }
   };
 
-  // Preset scenarios
-  const applyPreset = (presetName) => {
-    if (presetName === 'deep-green') {
-      setSelectedMaterials({
-        substructure: 'Low-carbon concrete with LC3',
-        superstructure: 'Cross-Laminated Timber (CLT)',
-        facade: 'Hempcrete block, density 300 kg/m3',
-        roofing_insulation: 'Wood fiberboard insulation'
-      });
-    } else if (presetName === 'conventional') {
-      setSelectedMaterials({
-        substructure: 'Portland cement, general, CEM I',
-        superstructure: 'Structural steel, virgin / BOF',
-        facade: 'Standard Clay Facing Brick',
-        roofing_insulation: 'Extruded Polystyrene (XPS) Rigid Foam'
-      });
-    } else if (presetName === 'hybrid') {
-      setSelectedMaterials({
-        substructure: 'Concrete (Ready mix - general)',
-        superstructure: 'Bamboo laminated timber beam (Glubam)',
-        facade: 'Double-Glazed Curtain Wall Glass',
-        roofing_insulation: 'Mycelium insulation board'
-      });
-    }
-  };
-
-  // Stage Breakdown Chart Data
-  const stageChartData = result?.stage_breakdown ? Object.entries(result.stage_breakdown).map(([stage, val]) => ({
-    stage: stage.split(' (')[0],
-    fullName: stage,
-    tonnes: val,
-  })) : [];
-
-  // Class Breakdown Chart Data
-  const classChartData = result?.assemblies ? result.assemblies.map(a => ({
-    name: a.class_name.split(' & ')[0],
-    material: a.material_name,
-    embodied: a.embodied_A1A3_tonnes,
-    transport: a.transport_A4_tonnes,
-    calamity: a.calamity_climate_B1B7_tonnes,
-    total: a.total_100yr_tonnes,
-  })) : [];
-
-  return (
-    <div className="wblca-container">
-      {/* ── Subheader / Banner ── */}
-      <div className="wblca-header-bar">
-        <div>
-          <h2 className="wblca-title">Whole Building Life Cycle Assessment (WBLCA)</h2>
-          <p className="wblca-desc">
-            Multi-decade carbon trajectory across <strong>25, 50, and 100 years</strong>. Select 1 material from each functional class to evaluate cradle-to-grave emissions from material procurement (A1-A3), transport (A4), construction (A5), maintenance (B2-B5), dynamic calamity aging (B1/B7), to demolition (C1-C4).
-          </p>
-        </div>
         <div className="preset-pill-group">
-          <span className="preset-label">Quick Presets:</span>
-          <button className="preset-pill green" onClick={() => applyPreset('deep-green')}>
-            <Leaf size={13} /> Deep Green Bio-Building
-          </button>
-          <button className="preset-pill" onClick={() => applyPreset('hybrid')}>
-            <Sparkles size={13} /> Modern Hybrid
-          </button>
-          <button className="preset-pill warning" onClick={() => applyPreset('conventional')}>
-            Conventional Baseline
-          </button>
         </div>
       </div>
 
@@ -227,57 +168,41 @@ const BuildingLCA = () => {
 
             <div className="classes-list">
               {classes.map((cls, idx) => {
-                const currentSelected = selectedMaterials[cls.class_id];
+                const normalOptions = cls.materials.filter(m => !m.is_green);
+                const greenOptions = cls.materials.filter(m => m.is_green);
                 return (
-                  <div key={cls.class_id} className="class-section">
-                    <div className="class-header">
+                  <div key={cls.class_id} className="class-section" style={{marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border-color)'}}>
+                    <div className="class-header" style={{marginBottom: '1rem'}}>
                       <div className="class-number-badge">{idx + 1}</div>
                       <div>
                         <h4 className="class-title">{cls.class_name}</h4>
                         <p className="class-role">
                           <strong>Role:</strong> {cls.role_in_building}
                         </p>
-                        <p className="class-lca-note">
-                          <strong>LCA Impact:</strong> {cls.lca_significance}
-                        </p>
                       </div>
                     </div>
 
-                    <div className="material-options-grid">
-                      {cls.materials.map(mat => {
-                        const isSelected = currentSelected === mat.name;
-                        return (
-                          <div
-                            key={mat.id || mat.name}
-                            className={`mat-option-card ${isSelected ? 'selected' : ''} ${mat.is_green ? 'green-tier' : ''}`}
-                            onClick={() => handleSelectMaterial(cls.class_id, mat.name)}
-                          >
-                            <div className="mat-card-top">
-                              <span className="mat-name">{mat.name}</span>
-                              {isSelected && <CheckCircle2 size={16} className="check-icon" />}
-                            </div>
-
-                            <div className="mat-stats-row">
-                              <span className={`gwp-tag ${mat.base_gwp < 0 ? 'carbon-negative' : mat.is_green ? 'green' : 'standard'}`}>
-                                {mat.base_gwp < 0 ? '🌱 Carbon Negative: ' : 'Base GWP: '}
-                                <strong>{mat.base_gwp.toFixed(3)}</strong> kg CO₂e/kg
-                              </span>
-                              {mat.is_green && (
-                                <span className="eco-badge">
-                                  <Leaf size={11} /> Green Material
-                                </span>
-                              )}
-                            </div>
-
-                            <p className="mat-desc">{mat.description}</p>
-                            {mat.benefits && (
-                              <p className="mat-benefits">
-                                <Sparkles size={11} /> {mat.benefits}
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })}
+                    <div className="material-dropdowns-row" style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
+                      <div className="dropdown-group" style={{ flex: 1 }}>
+                        <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Normal Materials</label>
+                        <select
+                          value={selectedNormalMaterials[cls.class_id] || ''}
+                          onChange={e => setSelectedNormalMaterials(prev => ({ ...prev, [cls.class_id]: e.target.value }))}
+                          style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-primary)', marginTop: '0.4rem', outline: 'none' }}
+                        >
+                          {normalOptions.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="dropdown-group" style={{ flex: 1 }}>
+                        <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--emerald)' }}>Green Materials</label>
+                        <select
+                          value={selectedGreenMaterials[cls.class_id] || ''}
+                          onChange={e => setSelectedGreenMaterials(prev => ({ ...prev, [cls.class_id]: e.target.value }))}
+                          style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--emerald)', background: 'rgba(16,185,129,0.05)', color: 'var(--text-primary)', marginTop: '0.4rem', outline: 'none' }}
+                        >
+                          {greenOptions.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
+                        </select>
+                      </div>
                     </div>
                   </div>
                 );
@@ -391,53 +316,37 @@ const BuildingLCA = () => {
           )}
 
           {/* KPI Summary Cards */}
-          {result?.summary && (
+          {resultGreen?.summary && resultNormal?.summary && (
             <div className="kpi-grid">
               <div className="kpi-card highlight">
-                <span className="kpi-sub">Total 100-Year Building Carbon</span>
+                <span className="kpi-sub">Green Building Total (100-Yr)</span>
                 <div className="kpi-value-row">
-                  <span className="kpi-num">{result.summary.total_100yr_tonnes.toLocaleString()}</span>
+                  <span className="kpi-num">{resultGreen.summary.total_100yr_tonnes.toLocaleString()}</span>
                   <span className="kpi-unit">t CO₂e</span>
                 </div>
                 <span className="kpi-footnote">
-                  Intensity: <strong>{result.summary.intensity_kg_co2e_per_m2} kg CO₂e/m²</strong>
+                  Intensity: <strong>{resultGreen.summary.intensity_kg_co2e_per_m2} kg CO₂e/m²</strong>
                 </span>
               </div>
 
+              <div className="kpi-card" style={{ borderColor: 'var(--amber)' }}>
+                <span className="kpi-sub">Normal Building Total (100-Yr)</span>
+                <div className="kpi-value-row">
+                  <span className="kpi-num">{resultNormal.summary.total_100yr_tonnes.toLocaleString()}</span>
+                  <span className="kpi-unit">t CO₂e</span>
+                </div>
+                <span className="kpi-footnote">
+                  Intensity: <strong>{resultNormal.summary.intensity_kg_co2e_per_m2} kg CO₂e/m²</strong>
+                </span>
+              </div>
+              
               <div className="kpi-card savings">
-                <span className="kpi-sub">Carbon Avoided vs Baseline</span>
+                <span className="kpi-sub">Green vs Normal Savings</span>
                 <div className="kpi-value-row">
-                  <span className="kpi-num text-emerald">-{result.summary.carbon_savings_percentage}%</span>
-                  <span className="kpi-unit text-emerald">({result.summary.carbon_savings_tonnes.toLocaleString()} t)</span>
+                  <span className="kpi-num text-emerald">-{Math.round((1 - resultGreen.summary.total_100yr_tonnes / resultNormal.summary.total_100yr_tonnes) * 100)}%</span>
                 </div>
                 <span className="kpi-footnote">
-                  vs Conventional Baseline ({result.summary.baseline_100yr_tonnes.toLocaleString()} t)
-                </span>
-              </div>
-
-              <div className="kpi-card">
-                <span className="kpi-sub">Upfront Embodied (A1–A5)</span>
-                <div className="kpi-value-row">
-                  <span className="kpi-num">
-                    {(result.summary.upfront_embodied_A1A3_tonnes + result.summary.transport_A4_tonnes + result.summary.construction_A5_tonnes).toFixed(1)}
-                  </span>
-                  <span className="kpi-unit">t CO₂e</span>
-                </div>
-                <span className="kpi-footnote">
-                  Handover footprint at Year 0
-                </span>
-              </div>
-
-              <div className="kpi-card">
-                <span className="kpi-sub">Dynamic Calamity Burden (B1/B7)</span>
-                <div className="kpi-value-row">
-                  <span className="kpi-num text-amber">
-                    +{result.summary.calamity_climate_B1B7_tonnes.toFixed(1)}
-                  </span>
-                  <span className="kpi-unit">t CO₂e</span>
-                </div>
-                <span className="kpi-footnote">
-                  100-yr climate degradation risk surcharge
+                  Saving <strong>{(resultNormal.summary.total_100yr_tonnes - resultGreen.summary.total_100yr_tonnes).toLocaleString()} t CO₂e</strong>
                 </span>
               </div>
             </div>
@@ -481,87 +390,62 @@ const BuildingLCA = () => {
               </div>
             </div>
 
-            <div className="chart-render-wrap">
-              {result?.timeline_trajectory && activeChartTab === 'trajectory' && (
-                <ResponsiveContainer width="100%" height={360}>
-                  <AreaChart
-                    data={result.timeline_trajectory}
-                    margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
-                  >
-                    <defs>
-                      <linearGradient id="gradSelected" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#00d4aa" stopOpacity={0.6} />
-                        <stop offset="100%" stopColor="#00d4aa" stopOpacity={0.05} />
-                      </linearGradient>
-                      <linearGradient id="gradBaseline" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.4} />
-                        <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.05} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      domain={['auto', 'auto']}
-                      tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={v => `${(v / 1000).toFixed(1)}k t`}
-                      label={{ value: 'Cumulative Tonnes CO₂e', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11, dy: 60 }}
-                    />
-                    <Tooltip
-                      content={({ active, payload, label }) => {
-                        if (!active || !payload?.length) return null;
-                        return (
-                          <div className="wblca-tooltip">
-                            <p className="tooltip-title">{label}</p>
-                            {payload.map((p, i) => (
-                              <p key={i} style={{ color: p.color, margin: '3px 0' }}>
-                                <span className="tooltip-dot" style={{ backgroundColor: p.color }} />
-                                {p.name}: <strong>{Number(p.value).toLocaleString()} t CO₂e</strong>
-                              </p>
-                            ))}
-                            {payload[0] && payload[1] && (
-                              <p className="tooltip-avoided">
-                                🌿 Carbon Avoided: <strong>{Math.max(0, payload[1].value - payload[0].value).toLocaleString()} t CO₂e</strong>
-                              </p>
-                            )}
-                          </div>
-                        );
-                      }}
-                    />
-                    <Legend verticalAlign="top" height={36} wrapperStyle={{ paddingBottom: 10 }} />
-                    <Area
-                      type="monotone"
-                      dataKey="cumulative_tonnes"
-                      name="Your Selected Building Design"
-                      stroke="#00d4aa"
-                      strokeWidth={3}
-                      fill="url(#gradSelected)"
-                      dot={{ r: 5, fill: '#00d4aa', strokeWidth: 2, stroke: '#0d1525' }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="baseline_cumulative_tonnes"
-                      name="Conventional Baseline Building"
-                      stroke="#f43f5e"
-                      strokeWidth={2}
-                      strokeDasharray="5 5"
-                      fill="url(#gradBaseline)"
-                      dot={{ r: 4, fill: '#f43f5e' }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+            <div className="chart-render-wrap" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+              {resultNormal?.timeline_trajectory && resultGreen?.timeline_trajectory && activeChartTab === 'trajectory' && (
+                <>
+                  <div className="chart-block">
+                    <h4 style={{ textAlign: 'center', color: 'var(--emerald)', marginBottom: '1rem' }}>Overall Cumulative Building Carbon Trajectory (100 Years) - Green Materials</h4>
+                    <ResponsiveContainer width="100%" height={320}>
+                      <AreaChart
+                        data={resultGreen.timeline_trajectory}
+                        margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                      >
+                        <defs>
+                          <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#10b981" stopOpacity={0.6} />
+                            <stop offset="100%" stopColor="#10b981" stopOpacity={0.05} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
+                        <XAxis dataKey="label" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(1)}k t`} />
+                        <Tooltip contentStyle={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px' }} />
+                        <Area type="monotone" dataKey="cumulative_tonnes" name="Green Building Trajectory" stroke="#10b981" strokeWidth={3} fill="url(#gradGreen)" dot={{ r: 5, fill: '#10b981' }} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="chart-block">
+                    <h4 style={{ textAlign: 'center', color: 'var(--amber)', marginBottom: '1rem' }}>Overall Cumulative Building Carbon Trajectory (100 Years) - Normal Materials</h4>
+                    <ResponsiveContainer width="100%" height={320}>
+                      <AreaChart
+                        data={resultNormal.timeline_trajectory}
+                        margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                      >
+                        <defs>
+                          <linearGradient id="gradNormal" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.6} />
+                            <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.05} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
+                        <XAxis dataKey="label" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(1)}k t`} />
+                        <Tooltip contentStyle={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px' }} />
+                        <Area type="monotone" dataKey="cumulative_tonnes" name="Normal Building Trajectory" stroke="#f59e0b" strokeWidth={3} fill="url(#gradNormal)" dot={{ r: 5, fill: '#f59e0b' }} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </>
               )}
 
-              {result?.stage_breakdown && activeChartTab === 'stages' && (
+              {resultGreen?.stage_breakdown && activeChartTab === 'stages' && (
                 <ResponsiveContainer width="100%" height={360}>
                   <BarChart
-                    data={stageChartData}
+                    data={Object.entries(resultGreen.stage_breakdown).map(([stage, val]) => ({
+                      stage: stage.split(' (')[0],
+                      fullName: stage,
+                      tonnes: val,
+                    }))}
                     margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
@@ -593,20 +477,27 @@ const BuildingLCA = () => {
                         );
                       }}
                     />
-                    <Bar dataKey="tonnes" name="Lifecycle Stage Emissions" radius={[6, 6, 0, 0]} maxBarSize={60}>
-                      {stageChartData.map((entry, index) => {
+                    <Bar dataKey="tonnes" name="Lifecycle Stage Emissions (Green)" radius={[6, 6, 0, 0]} maxBarSize={60}>
+                      {Object.entries(resultGreen.stage_breakdown).map(([stage, val], index) => {
                         const colors = ['#00d4aa', '#38bdf8', '#818cf8', '#a78bfa', '#fbbf24', '#f87171'];
-                        return <Cell key={`cell-${index}`} fill={entry.tonnes < 0 ? '#10b981' : colors[index % colors.length]} />;
+                        return <Cell key={`cell-${index}`} fill={val < 0 ? '#10b981' : colors[index % colors.length]} />;
                       })}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               )}
 
-              {result?.assemblies && activeChartTab === 'classes' && (
+              {resultGreen?.assemblies && activeChartTab === 'classes' && (
                 <ResponsiveContainer width="100%" height={360}>
                   <BarChart
-                    data={classChartData}
+                    data={resultGreen.assemblies.map(a => ({
+                      name: a.class_name.split(' & ')[0],
+                      material: a.material_name,
+                      embodied: a.embodied_A1A3_tonnes,
+                      transport: a.transport_A4_tonnes,
+                      calamity: a.calamity_climate_B1B7_tonnes,
+                      total: a.total_100yr_tonnes,
+                    }))}
                     margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
@@ -643,9 +534,9 @@ const BuildingLCA = () => {
                       }}
                     />
                     <Legend verticalAlign="top" height={36} />
-                    <Bar dataKey="embodied" name="Upfront Embodied (A1-A3)" fill="#00d4aa" stackId="a" />
-                    <Bar dataKey="transport" name="Logistics Transit (A4)" fill="#38bdf8" stackId="a" />
-                    <Bar dataKey="calamity" name="Dynamic Calamity (B1/B7)" fill="#fbbf24" stackId="a" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="embodied" name="Upfront Embodied (Green)" fill="#00d4aa" stackId="a" />
+                    <Bar dataKey="transport" name="Logistics Transit (Green)" fill="#38bdf8" stackId="a" />
+                    <Bar dataKey="calamity" name="Dynamic Calamity (Green)" fill="#fbbf24" stackId="a" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -653,50 +544,45 @@ const BuildingLCA = () => {
           </div>
 
           {/* Detailed Assembly Matrix Table */}
-          {result?.assemblies && (
+          {resultGreen?.assemblies && resultNormal?.assemblies && (
             <div className="wblca-table-card">
-              <h4 className="table-heading">Whole-Building Lifecycle Inventory Matrix</h4>
-              <p className="table-sub">Detailed stage-by-stage carbon accountancy per assembly class over 100 years.</p>
+              <h4 className="table-heading">Whole-Building Lifecycle Inventory Matrix (Green vs Normal)</h4>
               
               <div className="table-responsive">
                 <table className="wblca-table">
                   <thead>
                     <tr>
                       <th>Assembly Class</th>
+                      <th>Scenario</th>
                       <th>Selected Material</th>
-                      <th>Mass (t)</th>
                       <th>Base GWP</th>
                       <th>A1–A3 (t)</th>
-                      <th>A4 Transit (t)</th>
-                      <th>Maintenance (t)</th>
-                      <th>Calamity (t)</th>
                       <th>Total 100-Yr (t)</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {result.assemblies.map(a => (
-                      <tr key={a.class_id}>
-                        <td><strong>{a.class_name}</strong></td>
-                        <td>
-                          <span className="mat-cell-name">{a.material_name}</span>
-                        </td>
-                        <td>{a.mass_tonnes.toLocaleString()}</td>
-                        <td className={a.base_gwp < 0 ? 'text-emerald font-semibold' : ''}>
-                          {a.base_gwp.toFixed(3)}
-                        </td>
-                        <td className={a.embodied_A1A3_tonnes < 0 ? 'text-emerald font-semibold' : ''}>
-                          {a.embodied_A1A3_tonnes.toLocaleString()}
-                        </td>
-                        <td>{a.transport_A4_tonnes.toLocaleString()}</td>
-                        <td>{a.maintenance_B2B5_tonnes.toLocaleString()}</td>
-                        <td className="text-amber">+{a.calamity_climate_B1B7_tonnes.toLocaleString()}</td>
-                        <td>
-                          <strong className={a.total_100yr_tonnes < 0 ? 'text-emerald' : ''}>
-                            {a.total_100yr_tonnes.toLocaleString()}
-                          </strong>
-                        </td>
-                      </tr>
-                    ))}
+                    {resultGreen.assemblies.map((a, i) => {
+                      const n = resultNormal.assemblies[i];
+                      return (
+                        <React.Fragment key={a.class_id}>
+                          <tr>
+                            <td rowSpan={2}><strong>{a.class_name}</strong></td>
+                            <td style={{color: 'var(--emerald)'}}>Green</td>
+                            <td><span className="mat-cell-name">{a.material_name}</span></td>
+                            <td className={a.base_gwp < 0 ? 'text-emerald font-semibold' : ''}>{a.base_gwp.toFixed(3)}</td>
+                            <td>{a.embodied_A1A3_tonnes.toLocaleString()}</td>
+                            <td><strong className={a.total_100yr_tonnes < 0 ? 'text-emerald' : ''}>{a.total_100yr_tonnes.toLocaleString()}</strong></td>
+                          </tr>
+                          <tr style={{borderBottom: '2px solid var(--border-color)'}}>
+                            <td style={{color: 'var(--amber)'}}>Normal</td>
+                            <td><span className="mat-cell-name">{n.material_name}</span></td>
+                            <td>{n.base_gwp.toFixed(3)}</td>
+                            <td>{n.embodied_A1A3_tonnes.toLocaleString()}</td>
+                            <td><strong>{n.total_100yr_tonnes.toLocaleString()}</strong></td>
+                          </tr>
+                        </React.Fragment>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>

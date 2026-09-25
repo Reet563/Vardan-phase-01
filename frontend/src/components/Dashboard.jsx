@@ -526,7 +526,7 @@ export default function Dashboard() {
               <h1 className="header-title">Project Vardan</h1>
               <span className="phase-badge">
                 <Zap size={11} />
-                Phase 1: Universal Baseline Engine
+                Phase 3: Universal Baseline Engine
                 <span className="phase-badge-active">Active</span>
               </span>
             </div>
@@ -546,8 +546,7 @@ export default function Dashboard() {
             className={`nav-tab-btn ${mainTab === 'building' ? 'active' : ''}`}
             onClick={() => setMainTab('building')}
           >
-            <Building2 size={14} /> Whole Building LCA (25, 50 & 100 Yrs)
-            <span className="new-tab-tag">NEW</span>
+            <Building2 size={14} /> Complete Building LCA (100 years)
           </button>
         </nav>
 
