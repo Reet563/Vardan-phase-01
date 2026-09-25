@@ -150,6 +150,16 @@ const BuildingLCA = () => {
     }
   };
 
+  return (
+    <div className="wblca-container">
+      {/* ── Subheader / Banner ── */}
+      <div className="wblca-header-bar">
+        <div>
+          <h2 className="wblca-title">Whole Building Life Cycle Assessment (WBLCA)</h2>
+          <p className="wblca-desc">
+            Multi-decade carbon trajectory across <strong>25, 50, and 100 years</strong>. Select 1 material from each functional class to evaluate cradle-to-grave emissions from material procurement (A1-A3), transport (A4), construction (A5), maintenance (B2-B5), dynamic calamity aging (B1/B7), to demolition (C1-C4).
+          </p>
+        </div>
         <div className="preset-pill-group">
         </div>
       </div>
