@@ -19,6 +19,7 @@ from app.schemas.gwp_schema import (
     PredictionResponse,
     ReasoningRequest,
     ReasoningResponse,
+    AlternativeResponse
 )
 from app.schemas.transport_schema import (
     TransportRequest,
@@ -30,6 +31,7 @@ from app.services.material_service import material_service
 from app.services.prediction_service import prediction_service
 from app.services.transport_service import transport_service
 from app.services.reasoning_service import reasoning_service
+from app.services.alternatives_service import alternatives_service
 
 router = APIRouter(prefix="/api/v1", tags=["GWP & Logistics Predictions"])
 
@@ -187,3 +189,20 @@ async def compare_materials_reasoning(request: ReasoningRequest) -> ReasoningRes
         mat2_carbon=request.mat2_carbon
     )
     return ReasoningResponse(**result)
+
+
+# ---------------------------------------------------------------------------
+# GET /api/v1/materials/{material_name}/alternatives
+# ---------------------------------------------------------------------------
+@router.get(
+    "/materials/{material_name}/alternatives",
+    response_model=AlternativeResponse,
+    summary="Get green material alternatives",
+    description="Returns 2 or 3 green material alternatives for the requested material."
+)
+async def get_green_alternatives(material_name: str = Path(...)) -> AlternativeResponse:
+    alts = alternatives_service.get_alternatives(material_name, count=3)
+    return AlternativeResponse(
+        original_material=material_name,
+        alternatives=alts
+    )

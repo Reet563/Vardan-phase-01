@@ -328,9 +328,13 @@ export default function Dashboard() {
   });
 
   const [result, setResult]         = useState(null);
+  const [altResult, setAltResult]   = useState(null);
   const [predicting, setPredicting] = useState(false);
   const [error, setError]           = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  
+  const [alternatives, setAlternatives] = useState([]);
+  const [selectedAlternative, setSelectedAlternative] = useState('');
 
   /* Fetch material list on mount */
   useEffect(() => {
@@ -338,6 +342,18 @@ export default function Dashboard() {
       .then(r => { setMaterials(r.data.materials); setMatLoading(false); })
       .catch(() => { setError('Could not reach the backend. Is FastAPI running on port 8000?'); setMatLoading(false); });
   }, []);
+
+  /* Fetch alternatives when material selected */
+  useEffect(() => {
+    if (!selected) {
+      setAlternatives([]);
+      setSelectedAlternative('');
+      return;
+    }
+    axios.get(`${API}/materials/${encodeURIComponent(selected)}/alternatives`)
+      .then(r => setAlternatives(r.data.alternatives))
+      .catch(e => console.error("Failed to fetch alternatives", e));
+  }, [selected]);
 
   /* Client-side live estimate of transport emissions */
   const selectedVehicleObj = FLEET_VEHICLES.find(v => v.type === transportParams.vehicle_type) || FLEET_VEHICLES[1];
@@ -363,11 +379,25 @@ export default function Dashboard() {
         } : null,
       };
 
-      const { data } = await axios.post(`${API}/predict`, payload);
-      setResult(data);
+      const req1 = axios.post(`${API}/predict`, payload);
+      let req2 = null;
+      if (selectedAlternative) {
+        req2 = axios.post(`${API}/predict`, { ...payload, material_name: selectedAlternative });
+      }
+
+      if (req2) {
+        const [res1, res2] = await Promise.all([req1, req2]);
+        setResult(res1.data);
+        setAltResult(res2.data);
+      } else {
+        const res = await req1;
+        setResult(res.data);
+        setAltResult(null);
+      }
     } catch (e) {
       setError(e.response?.data?.detail || 'Prediction failed. Check the backend logs.');
       setResult(null);
+      setAltResult(null);
     } finally {
       setPredicting(false);
     }
@@ -381,26 +411,26 @@ export default function Dashboard() {
         {
           name: '1. Upfront Embodied\n(A1–A3)',
           shortName: 'A1–A3 Embodied',
-          value: result.base_gwp_A1A3,
-          color: '#00d4aa',
+          Original: result.base_gwp_A1A3,
+          Alternative: altResult ? altResult.base_gwp_A1A3 : 0,
         },
         {
           name: '2. Logistics Transit\n(A4)',
           shortName: 'A4 Transport',
-          value: result.transport.per_kg_transport_co2e,
-          color: '#fbbf24',
+          Original: result.transport.per_kg_transport_co2e,
+          Alternative: altResult ? altResult.transport.per_kg_transport_co2e : 0,
         },
         {
           name: '3. 100-yr Dynamic\n(B1–B7 Calamity)',
           shortName: '100-yr Calamity',
-          value: result.predicted_100yr_gwp,
-          color: '#38bdf8',
+          Original: result.predicted_100yr_gwp,
+          Alternative: altResult ? altResult.predicted_100yr_gwp : 0,
         },
         {
           name: '4. Total Lifecycle\n(Cradle-to-Lifespan)',
           shortName: 'Net Lifecycle',
-          value: result.total_lifecycle_carbon || (result.predicted_100yr_gwp + result.transport.per_kg_transport_co2e),
-          color: '#a78bfa',
+          Original: result.total_lifecycle_carbon || (result.predicted_100yr_gwp + result.transport.per_kg_transport_co2e),
+          Alternative: altResult ? (altResult.total_lifecycle_carbon || (altResult.predicted_100yr_gwp + altResult.transport.per_kg_transport_co2e)) : 0,
         },
       ];
     } else {
@@ -408,14 +438,14 @@ export default function Dashboard() {
         {
           name: 'Baseline GWP\n(A1–A3)',
           shortName: 'Baseline A1-A3',
-          value: result.base_gwp_A1A3,
-          color: '#00d4aa',
+          Original: result.base_gwp_A1A3,
+          Alternative: altResult ? altResult.base_gwp_A1A3 : 0,
         },
         {
           name: 'Predicted 100-yr\nDynamic GWP',
           shortName: '100-yr Predicted',
-          value: result.predicted_100yr_gwp,
-          color: '#38bdf8',
+          Original: result.predicted_100yr_gwp,
+          Alternative: altResult ? altResult.predicted_100yr_gwp : 0,
         },
       ];
     }
@@ -466,7 +496,6 @@ export default function Dashboard() {
         {/* ══ LEFT PANEL: Controls ══ */}
         <aside className="panel panel-controls">
 
-          {/* Section 1: Material Selector */}
           <section className="panel-section">
             <h2 className="section-title">
               <FlaskConical size={15} /> 1. Material Selection (A1–A3)
@@ -478,6 +507,25 @@ export default function Dashboard() {
               loading={matLoading}
             />
             <p className="section-hint">{materials.length} ICE V5 materials available</p>
+
+            {alternatives.length > 0 && (
+              <div className="alternatives-wrap">
+                <h3 className="alternatives-title">🌿 Green Alternatives (Optional)</h3>
+                <p className="alternatives-desc">Select an alternative to compare emissions.</p>
+                <div className="alternatives-list">
+                  {alternatives.map(alt => (
+                    <div 
+                      key={alt.material_name} 
+                      className={`alternative-card ${selectedAlternative === alt.material_name ? 'selected' : ''}`}
+                      onClick={() => setSelectedAlternative(alt.material_name === selectedAlternative ? '' : alt.material_name)}
+                    >
+                      <div className="alt-name">{alt.material_name}</div>
+                      <div className="alt-carbon">{alt.embodied_carbon.toFixed(3)} kgCO₂e/kg</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
 
           <div className="divider" />
@@ -785,12 +833,10 @@ export default function Dashboard() {
                     label={{ value: 'kg CO₂e / kg', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11, dy: 50 }}
                   />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(56,90,150,0.1)' }} />
-                  <Bar dataKey="value" name="GWP" radius={[8, 8, 0, 0]} maxBarSize={90}>
-                    {chartData.map((entry, index) => {
-                      const fills = ['url(#gradBaseline)', 'url(#gradTransport)', 'url(#gradPredicted)', 'url(#gradTotal)'];
-                      return <Cell key={`cell-${index}`} fill={fills[index % fills.length]} />;
-                    })}
-                  </Bar>
+                  <Bar dataKey="Original" name={result.material_name} fill="url(#gradTotal)" radius={[8, 8, 0, 0]} maxBarSize={60} />
+                  {altResult && (
+                    <Bar dataKey="Alternative" name={altResult.material_name} fill="url(#gradBaseline)" radius={[8, 8, 0, 0]} maxBarSize={60} />
+                  )}
                   <ReferenceLine
                     y={result.base_gwp_A1A3}
                     stroke="rgba(0,212,170,0.4)"

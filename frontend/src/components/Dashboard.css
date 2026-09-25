@@ -1248,3 +1248,69 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ══════════════════════════════════════════════════
+   Alternatives UI
+══════════════════════════════════════════════════ */
+.alternatives-wrap {
+  margin-top: 20px;
+  padding: 14px;
+  background: var(--bg-card-elevated);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0, 212, 170, 0.2);
+}
+
+.alternatives-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--teal);
+  margin-bottom: 4px;
+}
+
+.alternatives-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.alternatives-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alternative-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--bg-page);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.alternative-card:hover {
+  border-color: rgba(0, 212, 170, 0.5);
+  background: rgba(0, 212, 170, 0.05);
+}
+
+.alternative-card.selected {
+  background: rgba(0, 212, 170, 0.15);
+  border-color: var(--teal);
+}
+
+.alt-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.alt-carbon {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--teal);
+  margin-left: 10px;
+  white-space: nowrap;
+}

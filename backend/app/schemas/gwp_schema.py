@@ -135,3 +135,13 @@ class ReasoningResponse(BaseModel):
     material_2_reasoning: str = Field(..., description="Whitebox explanation for material 2.")
     comparison_conclusion: str = Field(..., description="Final conclusion comparing the two materials.")
 
+
+class AlternativeInfo(BaseModel):
+    material_name: str
+    embodied_carbon: float
+
+class AlternativeResponse(BaseModel):
+    original_material: str
+    alternatives: list[AlternativeInfo]
+
+
