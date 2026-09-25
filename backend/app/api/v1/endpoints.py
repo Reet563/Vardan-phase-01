@@ -135,7 +135,15 @@ async def calculate_transport_emissions(request: TransportRequest) -> TransportR
 )
 async def predict_gwp(request: PredictionRequest) -> PredictionResponse:
     # 1. Look up baseline GWP from the material dataset
-    base_gwp = material_service.get_material_base_gwp(request.material_name)
+    from fastapi import HTTPException
+    try:
+        base_gwp = material_service.get_material_base_gwp(request.material_name)
+    except HTTPException:
+        alt_gwp = alternatives_service.get_alternative_base_gwp(request.material_name)
+        if alt_gwp is not None:
+            base_gwp = alt_gwp
+        else:
+            raise
 
     # 2. Run the ML model
     predicted_100yr_gwp = prediction_service.predict_100yr_gwp(request, base_gwp)

@@ -44,4 +44,10 @@ class AlternativesService:
         
         return [{"material_name": a["name"], "embodied_carbon": a["carbon"]} for a in top_alts]
 
+    def get_alternative_base_gwp(self, material_name: str) -> float | None:
+        for gm in GREEN_MATERIALS:
+            if gm["name"] == material_name:
+                return gm["carbon"]
+        return None
+
 alternatives_service = AlternativesService()
