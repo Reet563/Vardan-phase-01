@@ -94,7 +94,11 @@ Project Vardan is configured for 1-click deployment on **Render** via [`render.y
 ├── data/
 │   └── ICE_V5_Cleaned_Materials.csv  # Cleaned ICE V5 material database
 ├── docs/
-│   └── TRANSPORTATION_MODULE.md      # Detailed Transport LCA Stage A4 documentation
+│   ├── MODEL_EVALUATION_REPORT.md       # Full Model Accuracy, Scores & F1-Score Report
+│   ├── PROJECT_CHALLENGES_AND_SOLUTIONS.md # Deep-dive into technical bottlenecks & mitigations
+│   ├── TRANSPORTATION_MODULE.md         # Detailed Transport LCA Stage A4 documentation
+│   ├── Project_Vardan_Technical_Report.html # Interactive printable technical report
+│   └── Project_Vardan_Technical_Report.pdf  # Generated executive PDF dossier
 ├── frontend/
 │   ├── src/
 │   │   ├── components/

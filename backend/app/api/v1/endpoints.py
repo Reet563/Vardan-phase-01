@@ -17,6 +17,8 @@ from app.schemas.gwp_schema import (
     MaterialListResponse,
     PredictionRequest,
     PredictionResponse,
+    ReasoningRequest,
+    ReasoningResponse,
 )
 from app.schemas.transport_schema import (
     TransportRequest,
@@ -27,6 +29,7 @@ from app.schemas.transport_schema import (
 from app.services.material_service import material_service
 from app.services.prediction_service import prediction_service
 from app.services.transport_service import transport_service
+from app.services.reasoning_service import reasoning_service
 
 router = APIRouter(prefix="/api/v1", tags=["GWP & Logistics Predictions"])
 
@@ -162,3 +165,25 @@ async def predict_gwp(request: PredictionRequest) -> PredictionResponse:
         total_cradle_to_site_gwp=total_cradle_to_site,
         total_lifecycle_carbon=total_lifecycle,
     )
+
+
+# ---------------------------------------------------------------------------
+# POST /api/v1/reason
+# ---------------------------------------------------------------------------
+@router.post(
+    "/reason",
+    response_model=ReasoningResponse,
+    summary="Reason out based on comparisons why green materials are better",
+    description=(
+        "Uses a trained whitebox Decision Tree model to compare two materials "
+        "and generate a programmatic text explanation of why one is superior."
+    ),
+)
+async def compare_materials_reasoning(request: ReasoningRequest) -> ReasoningResponse:
+    result = reasoning_service.compare_materials(
+        mat1_name=request.mat1_name,
+        mat1_carbon=request.mat1_carbon,
+        mat2_name=request.mat2_name,
+        mat2_carbon=request.mat2_carbon
+    )
+    return ReasoningResponse(**result)

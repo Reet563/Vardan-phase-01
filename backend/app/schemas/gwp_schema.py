@@ -106,3 +106,32 @@ class MaterialListResponse(BaseModel):
 
     count: int = Field(..., description="Total number of materials available.")
     materials: list[str] = Field(..., description="List of all available material names.")
+
+
+class ReasoningRequest(BaseModel):
+    """Input schema for a reasoning comparison request."""
+    
+    mat1_name: str = Field(..., description="Name of the first material.")
+    mat1_carbon: float = Field(..., description="Embodied carbon of the first material (kgCO2e/kg).")
+    mat2_name: str = Field(..., description="Name of the second material.")
+    mat2_carbon: float = Field(..., description="Embodied carbon of the second material (kgCO2e/kg).")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "mat1_name": "Hempcrete block",
+                "mat1_carbon": -0.41,
+                "mat2_name": "Portland cement",
+                "mat2_carbon": 0.85
+            }
+        }
+    }
+
+
+class ReasoningResponse(BaseModel):
+    """Output schema for a reasoning comparison response."""
+    
+    material_1_reasoning: str = Field(..., description="Whitebox explanation for material 1.")
+    material_2_reasoning: str = Field(..., description="Whitebox explanation for material 2.")
+    comparison_conclusion: str = Field(..., description="Final conclusion comparing the two materials.")
+
