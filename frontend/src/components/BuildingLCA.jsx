@@ -9,6 +9,7 @@ import {
   TrendingUp, Truck, Leaf, Loader2, ArrowRight, CheckCircle2,
   Scale, Info, Sparkles, Sliders, Calendar, ChevronRight, HelpCircle
 } from 'lucide-react';
+import MaterialSelector from './MaterialSelector';
 import './BuildingLCA.css';
 
 const API = (import.meta.env.VITE_API_URL || '') + '/api/v1';
@@ -178,8 +179,15 @@ const BuildingLCA = () => {
 
             <div className="classes-list">
               {classes.map((cls, idx) => {
-                const normalOptions = cls.materials.filter(m => !m.is_green);
-                const greenOptions = cls.materials.filter(m => m.is_green);
+                const normalOptionsCurated = cls.materials.filter(m => !m.is_green).map(m => m.name);
+                const greenOptionsCurated = cls.materials.filter(m => m.is_green).map(m => m.name);
+                
+                const otherNormal = allMaterials.filter(m => !normalOptionsCurated.includes(m));
+                const normalOptions = [...normalOptionsCurated, ...otherNormal];
+                
+                const otherGreen = allMaterials.filter(m => !greenOptionsCurated.includes(m));
+                const greenOptions = [...greenOptionsCurated, ...otherGreen];
+
                 return (
                   <div key={cls.class_id} className="class-section" style={{marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border-color)'}}>
                     <div className="class-header" style={{marginBottom: '1rem'}}>
@@ -195,23 +203,31 @@ const BuildingLCA = () => {
                     <div className="material-dropdowns-row" style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
                       <div className="dropdown-group" style={{ flex: 1 }}>
                         <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Normal Materials</label>
-                        <select
-                          value={selectedNormalMaterials[cls.class_id] || ''}
-                          onChange={e => setSelectedNormalMaterials(prev => ({ ...prev, [cls.class_id]: e.target.value }))}
-                          style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-primary)', marginTop: '0.4rem', outline: 'none' }}
-                        >
-                          {normalOptions.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
-                        </select>
+                        <div style={{ marginTop: '0.4rem' }}>
+                          <MaterialSelector
+                            materials={normalOptions}
+                            selected={selectedNormalMaterials[cls.class_id]}
+                            onSelect={val => setSelectedNormalMaterials(prev => ({ ...prev, [cls.class_id]: val }))}
+                            loading={loading}
+                          />
+                        </div>
                       </div>
                       <div className="dropdown-group" style={{ flex: 1 }}>
                         <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--emerald)' }}>Green Materials</label>
-                        <select
-                          value={selectedGreenMaterials[cls.class_id] || ''}
-                          onChange={e => setSelectedGreenMaterials(prev => ({ ...prev, [cls.class_id]: e.target.value }))}
-                          style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--emerald)', background: 'rgba(16,185,129,0.05)', color: 'var(--text-primary)', marginTop: '0.4rem', outline: 'none' }}
-                        >
-                          {greenOptions.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
-                        </select>
+                        <div style={{ 
+                          marginTop: '0.4rem', 
+                          '--border-color': 'var(--emerald)',
+                          '--border-bright': 'var(--emerald)',
+                          '--teal': 'var(--emerald)',
+                          '--teal-dim': 'rgba(16,185,129,0.1)'
+                        }}>
+                          <MaterialSelector
+                            materials={greenOptions}
+                            selected={selectedGreenMaterials[cls.class_id]}
+                            onSelect={val => setSelectedGreenMaterials(prev => ({ ...prev, [cls.class_id]: val }))}
+                            loading={loading}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
