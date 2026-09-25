@@ -100,6 +100,7 @@ const BuildingLCA = () => {
   const [resultGreen, setResultGreen] = useState(null);
   const [error, setError] = useState(null);
   const [activeChartTab, setActiveChartTab] = useState('trajectory'); // 'trajectory' | 'stages' | 'classes'
+  const [allMaterials, setAllMaterials] = useState([]);
 
   // Fetch classes on mount
   useEffect(() => {
@@ -113,7 +114,20 @@ const BuildingLCA = () => {
         console.warn('Using default building classes:', err);
       }
     };
+    
+    const fetchMaterials = async () => {
+      try {
+        const res = await axios.get(`${API}/materials`);
+        if (res.data?.materials?.length) {
+          setAllMaterials(res.data.materials);
+        }
+      } catch (err) {
+        console.error('Failed to fetch all materials:', err);
+      }
+    };
+
     fetchClasses();
+    fetchMaterials();
     // Run initial calculation
     handleCalculate();
   }, []);
