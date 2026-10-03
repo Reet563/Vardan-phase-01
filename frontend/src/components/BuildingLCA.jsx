@@ -2279,20 +2279,7 @@ const BuildingLCA = () => {
               </div>
             </div>
 
-            {/* Interactive Architectural Cutaway Model */}
-            <InteractiveBuildingDiagram
-              hoveredClass={hoveredClass}
-              onHoverClass={setHoveredClass}
-              onSelectClass={(classId) => {
-                setHoveredClass(classId);
-                const el = document.getElementById(`class-section-${classId}`);
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }}
-              selectedNormalMaterials={selectedNormalMaterials}
-              selectedGreenMaterials={selectedGreenMaterials}
-            />
-
-            <div className="classes-list" style={{ marginTop: '1.25rem' }}>
+            <div className="classes-list">
               {classes.map((cls, idx) => {
                 const normalOptions = cls.materials.filter(m => !m.is_green).map(m => m.name);
                 const greenOptions = cls.materials.filter(m => m.is_green).map(m => m.name);
@@ -2456,6 +2443,19 @@ const BuildingLCA = () => {
 
         {/* ══ RIGHT COLUMN: Charts, Timeline & Metrics ══ */}
         <div className="wblca-results-col">
+          {/* Interactive Architectural Cutaway Model (Sticky Right Column) */}
+          <InteractiveBuildingDiagram
+            hoveredClass={hoveredClass}
+            onHoverClass={setHoveredClass}
+            onSelectClass={(classId) => {
+              setHoveredClass(classId);
+              const el = document.getElementById(`class-section-${classId}`);
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }}
+            selectedNormalMaterials={selectedNormalMaterials}
+            selectedGreenMaterials={selectedGreenMaterials}
+          />
+
           {error && (
             <div className="wblca-error-box">
               <AlertTriangle size={18} />
