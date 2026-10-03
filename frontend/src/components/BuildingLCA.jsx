@@ -2516,62 +2516,101 @@ const BuildingLCA = () => {
 
             <div className="chart-render-wrap" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
               {resultNormal?.timeline_trajectory && resultGreen?.timeline_trajectory && activeChartTab === 'trajectory' && (
-                <>
-                  <div className="chart-block">
-                    <h4 style={{ textAlign: 'center', color: 'var(--emerald)', marginBottom: '1rem' }}>Overall Cumulative Building Carbon Trajectory (100 Years) - Green Materials</h4>
-                    <ResponsiveContainer width="100%" height={320}>
-                      <AreaChart
-                        data={resultGreen.timeline_trajectory}
-                        margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
-                      >
-                        <defs>
-                          <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#10b981" stopOpacity={0.6} />
-                            <stop offset="100%" stopColor="#10b981" stopOpacity={0.05} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
-                        <XAxis dataKey="label" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
-                        <YAxis 
-                          domain={['auto', 'auto']}
-                          tick={{ fill: 'var(--text-muted)', fontSize: 11 }} 
-                          axisLine={false} 
-                          tickLine={false} 
-                          tickFormatter={v => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k t` : `${Math.round(v)} t`} 
-                        />
-                        <Tooltip contentStyle={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px' }} />
-                        <Area type="monotone" dataKey="cumulative_tonnes" name="Green Building Trajectory" stroke="#10b981" strokeWidth={3} fill="url(#gradGreen)" dot={{ r: 5, fill: '#10b981' }} />
-                      </AreaChart>
-                    </ResponsiveContainer>
+                <div className="chart-block" style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 600 }}>
+                      Cumulative Building Carbon Trajectory Comparison (100 Years)
+                    </h4>
+                    <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--emerald)', fontWeight: 600 }}>
+                        <span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block' }} />
+                        Green Assembly
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--amber)', fontWeight: 600 }}>
+                        <span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: '#f59e0b', display: 'inline-block' }} />
+                        Normal Baseline Assembly
+                      </span>
+                    </div>
                   </div>
-                  <div className="chart-block">
-                    <h4 style={{ textAlign: 'center', color: 'var(--amber)', marginBottom: '1rem' }}>Overall Cumulative Building Carbon Trajectory (100 Years) - Normal Materials</h4>
-                    <ResponsiveContainer width="100%" height={320}>
-                      <AreaChart
-                        data={resultNormal.timeline_trajectory}
-                        margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
-                      >
-                        <defs>
-                          <linearGradient id="gradNormal" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.6} />
-                            <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.05} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
-                        <XAxis dataKey="label" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
-                        <YAxis 
-                          domain={['auto', 'auto']}
-                          tick={{ fill: 'var(--text-muted)', fontSize: 11 }} 
-                          axisLine={false} 
-                          tickLine={false} 
-                          tickFormatter={v => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k t` : `${Math.round(v)} t`} 
-                        />
-                        <Tooltip contentStyle={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px' }} />
-                        <Area type="monotone" dataKey="cumulative_tonnes" name="Normal Building Trajectory" stroke="#f59e0b" strokeWidth={3} fill="url(#gradNormal)" dot={{ r: 5, fill: '#f59e0b' }} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </>
+                  <ResponsiveContainer width="100%" height={380}>
+                    <AreaChart
+                      data={resultGreen.timeline_trajectory.map((gPoint, idx) => {
+                        const nPoint = resultNormal.timeline_trajectory[idx];
+                        return {
+                          year: gPoint.year,
+                          label: gPoint.label,
+                          green_tonnes: gPoint.cumulative_tonnes,
+                          normal_tonnes: nPoint?.cumulative_tonnes ?? null,
+                          carbon_avoided: nPoint ? Math.round(nPoint.cumulative_tonnes - gPoint.cumulative_tonnes) : 0,
+                        };
+                      })}
+                      margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                    >
+                      <defs>
+                        <linearGradient id="gradGreenCombined" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#10b981" stopOpacity={0.45} />
+                          <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
+                        </linearGradient>
+                        <linearGradient id="gradNormalCombined" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.35} />
+                          <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.02} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
+                      <XAxis dataKey="label" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <YAxis 
+                        domain={['auto', 'auto']}
+                        tick={{ fill: 'var(--text-muted)', fontSize: 11 }} 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tickFormatter={v => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k t` : `${Math.round(v)} t`} 
+                        label={{ value: 'Tonnes CO₂e', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11, dy: 40 }}
+                      />
+                      <Tooltip
+                        content={({ active, payload, label }) => {
+                          if (!active || !payload?.length) return null;
+                          const data = payload[0].payload;
+                          const savingsPct = data.normal_tonnes ? Math.round(((data.normal_tonnes - data.green_tonnes) / data.normal_tonnes) * 100) : 0;
+                          return (
+                            <div className="wblca-tooltip" style={{ minWidth: '220px' }}>
+                              <p className="tooltip-title" style={{ fontWeight: 700, marginBottom: '0.4rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.3rem' }}>
+                                {label}
+                              </p>
+                              <p style={{ color: '#10b981', margin: '4px 0', fontSize: '0.85rem' }}>
+                                Green Assembly: <strong>{Number(data.green_tonnes).toLocaleString()} t CO₂e</strong>
+                              </p>
+                              <p style={{ color: '#f59e0b', margin: '4px 0', fontSize: '0.85rem' }}>
+                                Normal Baseline: <strong>{Number(data.normal_tonnes).toLocaleString()} t CO₂e</strong>
+                              </p>
+                              <p style={{ color: '#38bdf8', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '0.82rem', fontWeight: 600 }}>
+                                Net Avoided Carbon: <strong>{Number(data.carbon_avoided).toLocaleString()} t</strong> ({savingsPct > 0 ? `-${savingsPct}%` : '0%'})
+                              </p>
+                            </div>
+                          );
+                        }}
+                      />
+                      <Legend verticalAlign="top" height={36} />
+                      <Area 
+                        type="monotone" 
+                        dataKey="normal_tonnes" 
+                        name="Normal Baseline Trajectory" 
+                        stroke="#f59e0b" 
+                        strokeWidth={3} 
+                        fill="url(#gradNormalCombined)" 
+                        dot={{ r: 5, fill: '#f59e0b' }} 
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="green_tonnes" 
+                        name="Green Building Trajectory" 
+                        stroke="#10b981" 
+                        strokeWidth={3} 
+                        fill="url(#gradGreenCombined)" 
+                        dot={{ r: 5, fill: '#10b981' }} 
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
               )}
 
               {resultGreen?.stage_breakdown && activeChartTab === 'stages' && (
