@@ -2486,8 +2486,8 @@ const BuildingLCA = () => {
                   {activeChartTab === 'classes' && 'Emissions Contribution by Functional Assembly Class'}
                 </h3>
                 <p className="chart-subheading">
-                  {activeChartTab === 'trajectory' && 'Tracking carbon accumulation from Handover (Yr 0) across 25, 50, 75, and 100-year horizons.'}
-                  {activeChartTab === 'stages' && 'Emissions allocated by LCA modules: A1-A3 Procurement, A4 Logistics, A5 Erection, B2-B5 Maintenance, B1/B7 Calamity, C1-C4 End of Life.'}
+                  {activeChartTab === 'trajectory' && 'Tracking carbon accumulation from Handover (Yr 0) across 25, 50, 75, and 100-year horizons. Note: Transport (A4) and construction (A5) are one-time initial emissions at Year 0; subsequent years accumulate only operational maintenance (B2-B5), weathering degradation (B1/B7), and demolition (C1-C4).'}
+                  {activeChartTab === 'stages' && 'Emissions allocated by LCA modules: A1-A3 Procurement, A4 Logistics Transit (One-time), A5 Erection (One-time), B2-B5 Maintenance, B1/B7 Calamity, C1-C4 End of Life.'}
                   {activeChartTab === 'classes' && 'Breakdown of tonnes CO₂e across Substructure, Superstructure, Facade, and Roofing/Insulation.'}
                 </p>
               </div>
@@ -2518,9 +2518,14 @@ const BuildingLCA = () => {
               {resultNormal?.timeline_trajectory && resultGreen?.timeline_trajectory && activeChartTab === 'trajectory' && (
                 <div className="chart-block" style={{ width: '100%' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 600 }}>
-                      Cumulative Building Carbon Trajectory Comparison (100 Years)
-                    </h4>
+                    <div>
+                      <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 600 }}>
+                        Cumulative Building Carbon Trajectory Comparison (100 Years)
+                      </h4>
+                      <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                        One-time upfront logistics (A4) & construction (A5) applied at Handover (Yr 0) + multi-decade aging.
+                      </p>
+                    </div>
                     <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem' }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--emerald)', fontWeight: 600 }}>
                         <span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block' }} />
@@ -2572,7 +2577,7 @@ const BuildingLCA = () => {
                           const data = payload[0].payload;
                           const savingsPct = data.normal_tonnes ? Math.round(((data.normal_tonnes - data.green_tonnes) / data.normal_tonnes) * 100) : 0;
                           return (
-                            <div className="wblca-tooltip" style={{ minWidth: '220px' }}>
+                            <div className="wblca-tooltip" style={{ minWidth: '240px' }}>
                               <p className="tooltip-title" style={{ fontWeight: 700, marginBottom: '0.4rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.3rem' }}>
                                 {label}
                               </p>
@@ -2584,6 +2589,9 @@ const BuildingLCA = () => {
                               </p>
                               <p style={{ color: '#38bdf8', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '0.82rem', fontWeight: 600 }}>
                                 Net Avoided Carbon: <strong>{Number(data.carbon_avoided).toLocaleString()} t</strong> ({savingsPct > 0 ? `-${savingsPct}%` : '0%'})
+                              </p>
+                              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+                                *A4 transport & A5 construction added once at Yr 0.
                               </p>
                             </div>
                           );
