@@ -22,10 +22,20 @@ const DEFAULT_CLASSES = [
     role_in_building: 'Load transfer to bedrock/subgrade soil, ground moisture barrier, seismic foundation integrity',
     lca_significance: 'Heavy mass (~30% building weight), critical upfront embodied carbon (A1-A3), 100-yr permanent lifespan',
     materials: [
-      { id: 'rc_ready_found', name: 'Concrete (Ready mix - general)', base_gwp: 0.130, is_green: false, description: 'Standard C25/30 ready-mix concrete for foundation grade slabs.' },
       { id: 'cem_i_found', name: 'Portland cement, general, CEM I', base_gwp: 0.860, is_green: false, description: 'Traditional virgin Portland cement standard foundation mix.' },
+      { id: 'rc_ready_found', name: 'Concrete (Ready mix - general)', base_gwp: 0.130, is_green: false, description: 'Standard C25/30 ready-mix concrete for foundation grade slabs.' },
+      { id: 'conc_c25_30', name: 'Concrete (C25/30 standard foundation mix)', base_gwp: 0.145, is_green: false, description: 'Standard reinforced foundation concrete.' },
+      { id: 'precast_found_piles', name: 'Precast concrete foundation piles', base_gwp: 0.180, is_green: false, description: 'Factory-cured high-density concrete driven piles.' },
+      { id: 'heavy_footing_conc', name: 'Heavy unreinforced footing concrete', base_gwp: 0.125, is_green: false, description: 'Mass gravity foundation pad.' },
+      { id: 'virgin_aggregate_found', name: 'Virgin aggregate & crushed gravel mix', base_gwp: 0.055, is_green: false, description: 'Quarried virgin rock and crushed gravel sub-base.' },
+      { id: 'asphalt_moist_seal', name: 'Asphaltic foundation moisture seal', base_gwp: 0.450, is_green: false, description: 'Petroleum bitumen damp-proof coating.' },
       { id: 'lc3_found', name: 'Low-carbon concrete with LC3', base_gwp: 0.095, is_green: true, description: 'Limestone Calcined Clay Cement reducing clinker ratio by up to 50%.', benefits: '40% lower embodied carbon with superior sulfate & chloride durability.' },
       { id: 'ggbs_found', name: 'Recycled glass pozzolan mortar mix', base_gwp: 0.042, is_green: true, description: 'High industrial byproduct replacement foundation binder.', benefits: 'Dramatically lower upfront emissions with excellent moisture resistance.' },
+      { id: 'ggbs_50_conc', name: 'Concrete with 50% GGBS cement replacement', base_gwp: 0.075, is_green: true, description: 'Ground Granulated Blast-furnace Slag binder.', benefits: '50% lower carbon footprint with high compressive strength.' },
+      { id: 'flyash_pozz_conc', name: 'Fly-ash pozzolan blended foundation concrete', base_gwp: 0.082, is_green: true, description: 'Coal combustion byproduct pozzolan foundation concrete.', benefits: 'Low heat of hydration and enhanced chemical resistance.' },
+      { id: 'geopolymer_slag_found', name: 'Geopolymer alkali-activated slag concrete', base_gwp: 0.050, is_green: true, description: 'Zero-clinker inorganic polymer slag binder.', benefits: '70% lower embodied emissions than standard Portland foundation.' },
+      { id: 'rca_crushed_agg', name: 'Recycled crushed concrete aggregate (RCA)', base_gwp: 0.025, is_green: true, description: 'Demolition concrete crushed and screened for subgrade fill.', benefits: 'Diverts demolition waste with minimal processing carbon.' },
+      { id: 'bio_asphalt_seal', name: 'Bio-asphalt waterproof foundation coating', base_gwp: 0.090, is_green: true, description: 'Plant-derived bio-binder waterproof sub-slab barrier.', benefits: '80% lower footprint than petrochemical bitumen.' }
     ]
   },
   {
@@ -36,8 +46,17 @@ const DEFAULT_CLASSES = [
     materials: [
       { id: 'steel_virgin', name: 'Structural steel, virgin / BOF', base_gwp: 2.450, is_green: false, description: 'Traditional blast furnace structural steel sections.' },
       { id: 'rc_super', name: 'Reinforced Concrete (C30/37 structural)', base_gwp: 0.165, is_green: false, description: 'Standard reinforced concrete frame with high-tensile steel rebar.' },
+      { id: 'steel_sections_rebar', name: 'Structural steel sections & heavy rebar', base_gwp: 1.720, is_green: false, description: 'Standard hot-rolled structural steel beams and columns.' },
+      { id: 'precast_beams_cols', name: 'Precast concrete beams and columns', base_gwp: 0.235, is_green: false, description: 'Heavy precast concrete structural frame assemblies.' },
+      { id: 'high_strength_ibeams', name: 'High-strength structural steel I-beams', base_gwp: 2.200, is_green: false, description: 'Heavy structural flange I-beams for long-span construction.' },
+      { id: 'post_tensioned_slab', name: 'Standard post-tensioned concrete slab', base_gwp: 0.190, is_green: false, description: 'Cast-in-place concrete floor slab with steel tendons.' },
       { id: 'clt_timber', name: 'Cross-Laminated Timber (CLT)', base_gwp: -0.610, is_green: true, description: 'Engineered solid wood multi-layer panels providing carbon sequestration.', benefits: 'Net-negative embodied carbon (-0.61 kg CO₂e/kg) storing biogenic carbon.' },
       { id: 'bamboo_glubam', name: 'Bamboo laminated timber beam (Glubam)', base_gwp: 0.180, is_green: true, description: 'Fast-growing structural bamboo composite beams with high tensile capacity.', benefits: 'Rapidly renewable crop, high strength-to-weight ratio.' },
+      { id: 'glulam_timber', name: 'Engineered Glulam structural timber', base_gwp: -0.520, is_green: true, description: 'Glue-laminated architectural structural wood beams.', benefits: 'Sequestered atmospheric carbon with outstanding aesthetic and thermal performance.' },
+      { id: 'mass_timber_frame', name: 'Mass Timber Post & Beam assembly', base_gwp: -0.480, is_green: true, description: 'Heavy timber gravity frame system replacing steel girders.', benefits: 'Rapid pre-fabrication and biogenic carbon storage.' },
+      { id: 'recycled_eaf_steel', name: 'Recycled Electric Arc Furnace (EAF) Steel', base_gwp: 0.450, is_green: true, description: 'Structural steel produced from 90%+ recycled scrap.', benefits: '80% lower embodied carbon than virgin blast furnace steel.' },
+      { id: 'lvl_timber', name: 'Laminated Veneer Lumber (LVL)', base_gwp: -0.390, is_green: true, description: 'High-strength engineered wood composite framing members.', benefits: 'Engineered strength with biogenic carbon sequestration.' },
+      { id: 'recycled_rebar_eaf', name: 'Recycled steel rebar (100% scrap EAF)', base_gwp: 0.380, is_green: true, description: 'Secondary scrap recycled reinforcing rebar.', benefits: 'High recycled content drastically reducing structural embodied carbon.' }
     ]
   },
   {
@@ -48,8 +67,18 @@ const DEFAULT_CLASSES = [
     materials: [
       { id: 'clay_brick', name: 'Standard Clay Facing Brick', base_gwp: 0.240, is_green: false, description: 'Fired clay external brickwork with Portland mortar backing.' },
       { id: 'curtain_wall', name: 'Double-Glazed Curtain Wall Glass', base_gwp: 1.400, is_green: false, description: 'Aluminum mullion framed double-glazed exterior facade system.' },
+      { id: 'acp_cladding', name: 'Aluminum composite panel (ACP) cladding', base_gwp: 6.800, is_green: false, description: 'Extruded aluminum bonded architectural cladding panels.' },
+      { id: 'std_cmu_block', name: 'Standard concrete masonry unit (CMU)', base_gwp: 0.180, is_green: false, description: 'Portland-based hollow core concrete masonry blocks.' },
+      { id: 'terracotta_tile', name: 'Fired terracotta rainscreen tile', base_gwp: 0.550, is_green: false, description: 'High-temperature kiln fired exterior rainscreen tiles.' },
+      { id: 'alum_window_frame', name: 'Extruded aluminum window framing', base_gwp: 4.500, is_green: false, description: 'Anodized aluminum framing for facade window openings.' },
+      { id: 'portland_stucco', name: 'Standard Portland cement exterior stucco', base_gwp: 0.320, is_green: false, description: 'Portland cement three-coat exterior render finish.' },
       { id: 'hempcrete_wall', name: 'Hempcrete block, density 300 kg/m3', base_gwp: -0.410, is_green: true, description: 'Hemp shiv and lime binder masonry block providing continuous envelope insulation.', benefits: 'Carbon negative biocomposite, breathable, excellent thermal inertia.' },
       { id: 'ceb_clay', name: 'Compressed Earth Block (CEB), unfired natural clay', base_gwp: 0.018, is_green: true, description: 'Unfired clay stabilized with minimal lime, zero high-temperature kiln firing.', benefits: 'Virtually zero upfront carbon footprint with superb thermal mass.' },
+      { id: 'rammed_earth_panel', name: 'Rammed earth structural wall panel', base_gwp: 0.022, is_green: true, description: 'Compacted subsoil, sand, and gravel with natural binders.', benefits: 'Ultra-low embodied carbon with exceptional acoustic dampening.' },
+      { id: 'cedar_cladding', name: 'Locally harvested cedar timber cladding', base_gwp: -0.380, is_green: true, description: 'Naturally rot-resistant untreated timber rainscreen siding.', benefits: 'Carbon negative facade storing biogenic carbon throughout building life.' },
+      { id: 'recycled_glass_facade', name: 'Recycled glass facade panels', base_gwp: 0.250, is_green: true, description: 'Sintered recycled post-consumer glass rainscreen panels.', benefits: 'High recycled content with modern aesthetic finish.' },
+      { id: 'straw_lime_panel', name: 'Straw-lime acoustic insulation wall panel', base_gwp: -0.350, is_green: true, description: 'Agricultural straw compressed into rigid exterior envelope panels.', benefits: 'Rapidly renewable agricultural byproduct sequestering carbon.' },
+      { id: 'recycled_agg_cmu', name: 'Recycled aggregate masonry block', base_gwp: 0.065, is_green: true, description: 'Masonry blocks manufactured with 70%+ recycled crushed aggregate.', benefits: '65% lower carbon footprint than standard concrete masonry.' }
     ]
   },
   {
@@ -60,9 +89,19 @@ const DEFAULT_CLASSES = [
     materials: [
       { id: 'xps_foam', name: 'Extruded Polystyrene (XPS) Rigid Foam', base_gwp: 2.800, is_green: false, description: 'Petrochemical polymer extruded foam insulation boards.' },
       { id: 'mineral_wool', name: 'Stone / Mineral Wool Insulation', base_gwp: 1.250, is_green: false, description: 'Melted rock spun into fiber batts with phenolic resin binder.' },
+      { id: 'pur_pir_foam', name: 'Polyurethane (PUR/PIR) foam insulation', base_gwp: 3.200, is_green: false, description: 'High-performance closed-cell synthetic polymer foam boards.' },
+      { id: 'bitumen_felt', name: 'Bituminous roofing felt & asphalt membrane', base_gwp: 0.950, is_green: false, description: 'Petrochemical asphalt waterproof roof membrane sheet.' },
+      { id: 'std_gypsum_board', name: 'Standard gypsum plasterboard', base_gwp: 0.280, is_green: false, description: 'Standard virgin gypsum interior partition wallboard.' },
+      { id: 'fiberglass_batt', name: 'Fiberglass batt insulation', base_gwp: 1.350, is_green: false, description: 'Spun glass fiber thermal batts with polymer binder.' },
+      { id: 'eps_foam_board', name: 'Expanded Polystyrene (EPS) board', base_gwp: 2.400, is_green: false, description: 'Expanded polystyrene bead insulation.' },
       { id: 'wood_fiberboard', name: 'Wood fiberboard insulation', base_gwp: -0.450, is_green: true, description: 'Bio-based renewable timber residue insulation board.', benefits: 'Carbon-negative insulation (-0.45 kg CO₂e/kg) with high heat storage capacity.' },
       { id: 'mycelium_board', name: 'Mycelium insulation board', base_gwp: -0.150, is_green: true, description: 'Fungal mycelium grown on agricultural sub-products into rigid boards.', benefits: 'Fully biodegradable, non-toxic, naturally fire resistant.' },
       { id: 'biochar_render', name: 'Bio-char enriched clay render', base_gwp: -0.550, is_green: true, description: 'Internal clay plaster enriched with carbonized biomass bio-char.', benefits: 'Permanently sequesters carbon while regulating indoor humidity.' },
+      { id: 'cellulose_loosefill', name: 'Cellulose loose-fill insulation (recycled paper)', base_gwp: -0.180, is_green: true, description: 'Treated post-consumer recycled newsprint and paper fibers.', benefits: '85% recycled post-consumer waste storing biogenic carbon.' },
+      { id: 'straw_bale_insul', name: 'Straw bale modular insulation', base_gwp: -0.320, is_green: true, description: 'Compressed agricultural straw bales for high R-value insulation.', benefits: 'Zero chemical binder, negative embodied carbon, high thermal inertia.' },
+      { id: 'expanded_cork_board', name: 'Expanded natural cork thermal board', base_gwp: -0.280, is_green: true, description: 'Steam-baked natural cork granules from harvested oak bark.', benefits: 'Renewable harvest without felling trees; excellent acoustic insulation.' },
+      { id: 'recycled_cotton_batt', name: 'Recycled cotton denim insulation batt', base_gwp: -0.120, is_green: true, description: 'Post-consumer recycled cotton denim textiles.', benefits: 'Diverts clothing waste from landfills, safe to install.' },
+      { id: 'clay_lime_plaster', name: 'Clay & lime natural breathable plaster', base_gwp: 0.035, is_green: true, description: 'Natural non-hydraulic lime and raw clay internal partition plaster.', benefits: 'Zero VOCs, hygroscopic humidity balancing, ultra-low processing carbon.' }
     ]
   }
 ];
@@ -102,7 +141,7 @@ const BuildingLCA = () => {
   const [activeChartTab, setActiveChartTab] = useState('trajectory'); // 'trajectory' | 'stages' | 'classes'
   const [allMaterials, setAllMaterials] = useState([]);
 
-  // Fetch classes on mount
+  // Fetch classes & materials on mount
   useEffect(() => {
     const fetchClasses = async () => {
       try {
@@ -128,8 +167,6 @@ const BuildingLCA = () => {
 
     fetchClasses();
     fetchMaterials();
-    // Run initial calculation
-    handleCalculate();
   }, []);
 
   const handleCalculate = async () => {
@@ -164,6 +201,11 @@ const BuildingLCA = () => {
       setLoading(false);
     }
   };
+
+  // Run initial calculation once mounted and whenever materials change
+  useEffect(() => {
+    handleCalculate();
+  }, [selectedNormalMaterials, selectedGreenMaterials, gfa, transitDistance, vehicleType, tempAnomaly, extremeEvents, seaLevelRise, policyScore]);
 
   return (
     <div className="wblca-container">
@@ -237,7 +279,7 @@ const BuildingLCA = () => {
                          n.includes('pozzolan') || n.includes('clay block');
                 };
 
-                // Filter the entire API database to ONLY those materials relevant for this specific class
+                // Filter additional API materials relevant for this specific class
                 const classRelevantMaterials = allMaterials.filter(m => matchesClass(m, cls.class_id));
 
                 // Create strictly disjoint lists
@@ -384,7 +426,7 @@ const BuildingLCA = () => {
               ) : (
                 <>
                   <Building2 size={18} />
-                  Calculate Whole-Building Lifecycle Carbon
+                  Recalculate Whole-Building Lifecycle Carbon
                 </>
               )}
             </button>
@@ -406,7 +448,9 @@ const BuildingLCA = () => {
               <div className="kpi-card highlight">
                 <span className="kpi-sub">Green Building Total (100-Yr)</span>
                 <div className="kpi-value-row">
-                  <span className="kpi-num">{resultGreen.summary.total_100yr_tonnes.toLocaleString()}</span>
+                  <span className={`kpi-num ${resultGreen.summary.total_100yr_tonnes < 0 ? 'text-emerald' : ''}`}>
+                    {resultGreen.summary.total_100yr_tonnes.toLocaleString()}
+                  </span>
                   <span className="kpi-unit">t CO₂e</span>
                 </div>
                 <span className="kpi-footnote">
@@ -428,10 +472,12 @@ const BuildingLCA = () => {
               <div className="kpi-card savings">
                 <span className="kpi-sub">Green vs Normal Savings</span>
                 <div className="kpi-value-row">
-                  <span className="kpi-num text-emerald">-{Math.round((1 - resultGreen.summary.total_100yr_tonnes / resultNormal.summary.total_100yr_tonnes) * 100)}%</span>
+                  <span className="kpi-num text-emerald">
+                    -{Math.min(100, Math.round((1 - resultGreen.summary.total_100yr_tonnes / (resultNormal.summary.total_100yr_tonnes || 1)) * 100))}%
+                  </span>
                 </div>
                 <span className="kpi-footnote">
-                  Saving <strong>{(resultNormal.summary.total_100yr_tonnes - resultGreen.summary.total_100yr_tonnes).toLocaleString()} t CO₂e</strong>
+                  Saving <strong>{Math.round(resultNormal.summary.total_100yr_tonnes - resultGreen.summary.total_100yr_tonnes).toLocaleString()} t CO₂e</strong>
                 </span>
               </div>
             </div>
@@ -493,7 +539,13 @@ const BuildingLCA = () => {
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
                         <XAxis dataKey="label" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(1)}k t`} />
+                        <YAxis 
+                          domain={['auto', 'auto']}
+                          tick={{ fill: 'var(--text-muted)', fontSize: 11 }} 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tickFormatter={v => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k t` : `${Math.round(v)} t`} 
+                        />
                         <Tooltip contentStyle={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px' }} />
                         <Area type="monotone" dataKey="cumulative_tonnes" name="Green Building Trajectory" stroke="#10b981" strokeWidth={3} fill="url(#gradGreen)" dot={{ r: 5, fill: '#10b981' }} />
                       </AreaChart>
@@ -514,7 +566,13 @@ const BuildingLCA = () => {
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
                         <XAxis dataKey="label" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(1)}k t`} />
+                        <YAxis 
+                          domain={['auto', 'auto']}
+                          tick={{ fill: 'var(--text-muted)', fontSize: 11 }} 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tickFormatter={v => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k t` : `${Math.round(v)} t`} 
+                        />
                         <Tooltip contentStyle={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px' }} />
                         <Area type="monotone" dataKey="cumulative_tonnes" name="Normal Building Trajectory" stroke="#f59e0b" strokeWidth={3} fill="url(#gradNormal)" dot={{ r: 5, fill: '#f59e0b' }} />
                       </AreaChart>
@@ -545,7 +603,7 @@ const BuildingLCA = () => {
                       tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
                       axisLine={false}
                       tickLine={false}
-                      tickFormatter={v => `${v.toFixed(0)} t`}
+                      tickFormatter={v => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k t` : `${Math.round(v)} t`}
                       label={{ value: 'Tonnes CO₂e', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11, dy: 40 }}
                     />
                     <Tooltip
@@ -597,7 +655,7 @@ const BuildingLCA = () => {
                       tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
                       axisLine={false}
                       tickLine={false}
-                      tickFormatter={v => `${v.toFixed(0)} t`}
+                      tickFormatter={v => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k t` : `${Math.round(v)} t`}
                       label={{ value: 'Tonnes CO₂e', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11, dy: 40 }}
                     />
                     <Tooltip

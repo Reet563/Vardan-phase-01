@@ -34,9 +34,10 @@ BUILDING_CLASSES: List[MaterialClassDefinition] = [
         class_id="substructure",
         class_name="Substructure & Foundation",
         role_in_building="Load transfer to bedrock/soil, moisture barrier, seismic footing foundation",
-        lca_significance="Heavy mass, critical upfront embodied carbon (A1-A3), low replacement frequency",
+        lca_significance="Heavy mass (~30% building weight), critical upfront embodied carbon (A1-A3), 100-yr permanent lifespan",
         default_mass_ratio_kg_per_m2=300.0,
         materials=[
+            # Normal / Conventional
             MaterialClassItem(
                 id="cem_i_found",
                 name="Portland cement, general, CEM I",
@@ -51,6 +52,42 @@ BUILDING_CLASSES: List[MaterialClassDefinition] = [
                 is_green=False,
                 description="Standard C25/30 ready-mix concrete for foundation grade slabs.",
             ),
+            MaterialClassItem(
+                id="conc_c25_30",
+                name="Concrete (C25/30 standard foundation mix)",
+                base_gwp=0.145,
+                is_green=False,
+                description="Standard reinforced foundation concrete with standard Portland binder.",
+            ),
+            MaterialClassItem(
+                id="precast_found_piles",
+                name="Precast concrete foundation piles",
+                base_gwp=0.180,
+                is_green=False,
+                description="Factory-cured high-density concrete driven piles.",
+            ),
+            MaterialClassItem(
+                id="heavy_footing_conc",
+                name="Heavy unreinforced footing concrete",
+                base_gwp=0.125,
+                is_green=False,
+                description="Mass gravity foundation pad without steel reinforcement.",
+            ),
+            MaterialClassItem(
+                id="virgin_aggregate_found",
+                name="Virgin aggregate & crushed gravel mix",
+                base_gwp=0.055,
+                is_green=False,
+                description="Quarried virgin rock and crushed gravel sub-base bedding.",
+            ),
+            MaterialClassItem(
+                id="asphalt_moist_seal",
+                name="Asphaltic foundation moisture seal",
+                base_gwp=0.450,
+                is_green=False,
+                description="Petroleum bitumen damp-proof foundation coating.",
+            ),
+            # Green / Low-Carbon
             MaterialClassItem(
                 id="lc3_found",
                 name="Low-carbon concrete with LC3",
@@ -67,6 +104,46 @@ BUILDING_CLASSES: List[MaterialClassDefinition] = [
                 description="High industrial byproduct replacement foundation binder.",
                 benefits="Dramatically lower upfront emissions and high water resistance."
             ),
+            MaterialClassItem(
+                id="ggbs_50_conc",
+                name="Concrete with 50% GGBS cement replacement",
+                base_gwp=0.075,
+                is_green=True,
+                description="Ground Granulated Blast-furnace Slag replacing half of virgin cement.",
+                benefits="50% lower carbon footprint with higher long-term compressive strength."
+            ),
+            MaterialClassItem(
+                id="flyash_pozz_conc",
+                name="Fly-ash pozzolan blended foundation concrete",
+                base_gwp=0.082,
+                is_green=True,
+                description="Coal combustion byproduct pozzolan blended into foundation mix.",
+                benefits="Low heat of hydration and enhanced chemical resistance."
+            ),
+            MaterialClassItem(
+                id="geopolymer_slag_found",
+                name="Geopolymer alkali-activated slag concrete",
+                base_gwp=0.050,
+                is_green=True,
+                description="Zero-clinker inorganic polymer binder activated with alkali silicates.",
+                benefits="70% lower embodied emissions than standard Portland foundation."
+            ),
+            MaterialClassItem(
+                id="rca_crushed_agg",
+                name="Recycled crushed concrete aggregate (RCA)",
+                base_gwp=0.025,
+                is_green=True,
+                description="Demolition concrete crushed and screened for subgrade fill.",
+                benefits="Diverts demolition waste from landfill with minimal processing carbon."
+            ),
+            MaterialClassItem(
+                id="bio_asphalt_seal",
+                name="Bio-asphalt waterproof foundation coating",
+                base_gwp=0.090,
+                is_green=True,
+                description="Plant-derived bio-binder waterproof sub-slab barrier.",
+                benefits="Renewable bio-feedstock with 80% lower footprint than petrochemical bitumen."
+            ),
         ]
     ),
     MaterialClassDefinition(
@@ -76,6 +153,7 @@ BUILDING_CLASSES: List[MaterialClassDefinition] = [
         lca_significance="Primary driver of structural embodied carbon, highly vulnerable to seismic/thermal aging",
         default_mass_ratio_kg_per_m2=500.0,
         materials=[
+            # Normal / Conventional
             MaterialClassItem(
                 id="steel_virgin",
                 name="Structural steel, virgin / BOF",
@@ -90,6 +168,35 @@ BUILDING_CLASSES: List[MaterialClassDefinition] = [
                 is_green=False,
                 description="Standard reinforced concrete frame with high tensile rebar.",
             ),
+            MaterialClassItem(
+                id="steel_sections_rebar",
+                name="Structural steel sections & heavy rebar",
+                base_gwp=1.720,
+                is_green=False,
+                description="Standard hot-rolled structural steel beams and columns.",
+            ),
+            MaterialClassItem(
+                id="precast_beams_cols",
+                name="Precast concrete beams and columns",
+                base_gwp=0.235,
+                is_green=False,
+                description="Heavy precast concrete structural frame assemblies.",
+            ),
+            MaterialClassItem(
+                id="high_strength_ibeams",
+                name="High-strength structural steel I-beams",
+                base_gwp=2.200,
+                is_green=False,
+                description="Heavy structural flange I-beams for long-span construction.",
+            ),
+            MaterialClassItem(
+                id="post_tensioned_slab",
+                name="Standard post-tensioned concrete slab",
+                base_gwp=0.190,
+                is_green=False,
+                description="Cast-in-place concrete floor slab with high-tension unbonded steel tendons.",
+            ),
+            # Green / Low-Carbon
             MaterialClassItem(
                 id="clt_timber",
                 name="Cross-Laminated Timber (CLT)",
@@ -106,6 +213,46 @@ BUILDING_CLASSES: List[MaterialClassDefinition] = [
                 description="Fast-growing structural bamboo composite beams with high tensile capacity.",
                 benefits="Rapidly renewable crop, high strength-to-weight ratio."
             ),
+            MaterialClassItem(
+                id="glulam_timber",
+                name="Engineered Glulam structural timber",
+                base_gwp=-0.520,
+                is_green=True,
+                description="Glue-laminated architectural structural wood beams and columns.",
+                benefits="Sequestered atmospheric carbon with outstanding aesthetic and thermal performance."
+            ),
+            MaterialClassItem(
+                id="mass_timber_frame",
+                name="Mass Timber Post & Beam assembly",
+                base_gwp=-0.480,
+                is_green=True,
+                description="Heavy timber gravity frame system replacing standard steel girders.",
+                benefits="Rapid pre-fabrication and massive biogenic carbon storage."
+            ),
+            MaterialClassItem(
+                id="recycled_eaf_steel",
+                name="Recycled Electric Arc Furnace (EAF) Steel",
+                base_gwp=0.450,
+                is_green=True,
+                description="Structural steel produced from 90%+ recycled steel scrap via EAF.",
+                benefits="80% lower embodied carbon than traditional virgin blast furnace steel."
+            ),
+            MaterialClassItem(
+                id="lvl_timber",
+                name="Laminated Veneer Lumber (LVL)",
+                base_gwp=-0.390,
+                is_green=True,
+                description="High-strength engineered wood composite framing members.",
+                benefits="Consistent engineered structural strength with biogenic carbon sequestration."
+            ),
+            MaterialClassItem(
+                id="recycled_rebar_eaf",
+                name="Recycled steel rebar (100% scrap EAF)",
+                base_gwp=0.380,
+                is_green=True,
+                description="Secondary scrap recycled reinforcing rebar.",
+                benefits="High recycled content drastically reducing structural embodied carbon."
+            ),
         ]
     ),
     MaterialClassDefinition(
@@ -115,6 +262,7 @@ BUILDING_CLASSES: List[MaterialClassDefinition] = [
         lca_significance="Undergoes repeated replacement/renovation (B4-B5) every 25-30 years, exposed to extreme climate",
         default_mass_ratio_kg_per_m2=160.0,
         materials=[
+            # Normal / Conventional
             MaterialClassItem(
                 id="clay_brick",
                 name="Standard Clay Facing Brick",
@@ -129,6 +277,42 @@ BUILDING_CLASSES: List[MaterialClassDefinition] = [
                 is_green=False,
                 description="Aluminum mullion framed double-glazed exterior facade system.",
             ),
+            MaterialClassItem(
+                id="acp_cladding",
+                name="Aluminum composite panel (ACP) cladding",
+                base_gwp=6.800,
+                is_green=False,
+                description="Extruded aluminum bonded exterior architectural cladding panels.",
+            ),
+            MaterialClassItem(
+                id="std_cmu_block",
+                name="Standard concrete masonry unit (CMU)",
+                base_gwp=0.180,
+                is_green=False,
+                description="Portland-based hollow core concrete masonry blocks.",
+            ),
+            MaterialClassItem(
+                id="terracotta_tile",
+                name="Fired terracotta rainscreen tile",
+                base_gwp=0.550,
+                is_green=False,
+                description="High-temperature kiln fired exterior decorative rainscreen tiles.",
+            ),
+            MaterialClassItem(
+                id="alum_window_frame",
+                name="Extruded aluminum window framing",
+                base_gwp=4.500,
+                is_green=False,
+                description="Anodized aluminum framing for facade window openings.",
+            ),
+            MaterialClassItem(
+                id="portland_stucco",
+                name="Standard Portland cement exterior stucco",
+                base_gwp=0.320,
+                is_green=False,
+                description="Portland cement three-coat exterior render finish.",
+            ),
+            # Green / Low-Carbon
             MaterialClassItem(
                 id="hempcrete_wall",
                 name="Hempcrete block, density 300 kg/m3",
@@ -145,6 +329,46 @@ BUILDING_CLASSES: List[MaterialClassDefinition] = [
                 description="Unfired clay stabilized with minimal lime, zero high-temperature kiln firing.",
                 benefits="Virtually zero upfront carbon footprint with superb thermal mass."
             ),
+            MaterialClassItem(
+                id="rammed_earth_panel",
+                name="Rammed earth structural wall panel",
+                base_gwp=0.022,
+                is_green=True,
+                description="Compacted subsoil, sand, and gravel with natural binders.",
+                benefits="Ultra-low embodied carbon with exceptional natural acoustic and thermal dampening."
+            ),
+            MaterialClassItem(
+                id="cedar_cladding",
+                name="Locally harvested cedar timber cladding",
+                base_gwp=-0.380,
+                is_green=True,
+                description="Naturally rot-resistant untreated timber rainscreen siding.",
+                benefits="Carbon negative facade storing biogenic carbon throughout building life."
+            ),
+            MaterialClassItem(
+                id="recycled_glass_facade",
+                name="Recycled glass facade panels",
+                base_gwp=0.250,
+                is_green=True,
+                description="Sintered recycled post-consumer glass rainscreen panels.",
+                benefits="High recycled content with striking modern aesthetic finish."
+            ),
+            MaterialClassItem(
+                id="straw_lime_panel",
+                name="Straw-lime acoustic insulation wall panel",
+                base_gwp=-0.350,
+                is_green=True,
+                description="Agricultural straw compressed into rigid exterior envelope panels.",
+                benefits="Rapidly renewable agricultural byproduct sequestering carbon."
+            ),
+            MaterialClassItem(
+                id="recycled_agg_cmu",
+                name="Recycled aggregate masonry block",
+                base_gwp=0.065,
+                is_green=True,
+                description="Masonry blocks manufactured with 70%+ recycled crushed aggregate.",
+                benefits="65% lower carbon footprint than standard virgin concrete masonry."
+            ),
         ]
     ),
     MaterialClassDefinition(
@@ -154,6 +378,7 @@ BUILDING_CLASSES: List[MaterialClassDefinition] = [
         lca_significance="Shortest replacement cycle (20-25 yrs), direct impact on operational energy and fire safety",
         default_mass_ratio_kg_per_m2=60.0,
         materials=[
+            # Normal / Conventional
             MaterialClassItem(
                 id="xps_foam",
                 name="Extruded Polystyrene (XPS) Rigid Foam",
@@ -168,6 +393,42 @@ BUILDING_CLASSES: List[MaterialClassDefinition] = [
                 is_green=False,
                 description="Melted rock spun into fiber batts with phenolic resin binder.",
             ),
+            MaterialClassItem(
+                id="pur_pir_foam",
+                name="Polyurethane (PUR/PIR) foam insulation",
+                base_gwp=3.200,
+                is_green=False,
+                description="High-performance closed-cell synthetic polymer foam boards.",
+            ),
+            MaterialClassItem(
+                id="bitumen_felt",
+                name="Bituminous roofing felt & asphalt membrane",
+                base_gwp=0.950,
+                is_green=False,
+                description="Petrochemical asphalt waterproof roof membrane sheet.",
+            ),
+            MaterialClassItem(
+                id="std_gypsum_board",
+                name="Standard gypsum plasterboard",
+                base_gwp=0.280,
+                is_green=False,
+                description="Standard virgin gypsum interior partition wallboard.",
+            ),
+            MaterialClassItem(
+                id="fiberglass_batt",
+                name="Fiberglass batt insulation",
+                base_gwp=1.350,
+                is_green=False,
+                description="Spun glass fiber thermal batts with polymer binder.",
+            ),
+            MaterialClassItem(
+                id="eps_foam_board",
+                name="Expanded Polystyrene (EPS) board",
+                base_gwp=2.400,
+                is_green=False,
+                description="Expanded petrochemical polystyrene bead insulation.",
+            ),
+            # Green / Bio-based
             MaterialClassItem(
                 id="wood_fiberboard",
                 name="Wood fiberboard insulation",
@@ -192,6 +453,46 @@ BUILDING_CLASSES: List[MaterialClassDefinition] = [
                 description="Internal clay plaster enriched with carbonized biomass bio-char.",
                 benefits="Permanently sequesters carbon while regulating indoor humidity."
             ),
+            MaterialClassItem(
+                id="cellulose_loosefill",
+                name="Cellulose loose-fill insulation (recycled paper)",
+                base_gwp=-0.180,
+                is_green=True,
+                description="Treated post-consumer recycled newsprint and paper fibers.",
+                benefits="85% recycled post-consumer waste storing biogenic carbon."
+            ),
+            MaterialClassItem(
+                id="straw_bale_insul",
+                name="Straw bale modular insulation",
+                base_gwp=-0.320,
+                is_green=True,
+                description="Compressed agricultural straw bales for high R-value insulation.",
+                benefits="Zero chemical binder, negative embodied carbon, high thermal inertia."
+            ),
+            MaterialClassItem(
+                id="expanded_cork_board",
+                name="Expanded natural cork thermal board",
+                base_gwp=-0.280,
+                is_green=True,
+                description="Steam-baked natural cork granules from harvested oak bark.",
+                benefits="Renewable harvest without felling trees; excellent acoustic insulation."
+            ),
+            MaterialClassItem(
+                id="recycled_cotton_batt",
+                name="Recycled cotton denim insulation batt",
+                base_gwp=-0.120,
+                is_green=True,
+                description="Post-consumer recycled cotton denim textiles treated with borates.",
+                benefits="Diverts clothing waste from landfills, non-itchy and safe to install."
+            ),
+            MaterialClassItem(
+                id="clay_lime_plaster",
+                name="Clay & lime natural breathable plaster",
+                base_gwp=0.035,
+                is_green=True,
+                description="Natural non-hydraulic lime and raw clay internal partition plaster.",
+                benefits="Zero VOCs, hygroscopic humidity balancing, ultra-low processing carbon."
+            ),
         ]
     ),
 ]
@@ -202,18 +503,18 @@ class BuildingService:
         return MaterialClassesResponse(classes=BUILDING_CLASSES)
 
     def _resolve_base_gwp(self, material_name: str) -> float:
-        # Check custom classes first
+        # 1. Check curated custom classes first
         for c in BUILDING_CLASSES:
             for m in c.materials:
                 if m.name.lower() == material_name.lower():
                     return m.base_gwp
 
-        # Check alternatives service
+        # 2. Check alternatives service
         alt_gwp = alternatives_service.get_alternative_base_gwp(material_name)
         if alt_gwp is not None:
             return alt_gwp
 
-        # Check ICE V5 dataset
+        # 3. Check ICE V5 dataset
         try:
             return material_service.get_material_base_gwp(material_name)
         except Exception:
@@ -232,8 +533,25 @@ class BuildingService:
         )
         transport_rate_per_kg = t_calc["per_kg_transport_co2e"]
 
-        # Climate prediction payload template
+        # Normalized climate stress factor (0.02 to 0.25)
+        climate_stress = (
+            (req.extreme_weather_events / 50.0) * 0.05 +
+            (max(0.0, req.temperature_anomaly) / 5.0) * 0.05 +
+            (max(0.0, req.sea_level_rise) / 50.0) * 0.02 +
+            (max(0.0, 100.0 - req.policy_score) / 100.0) * 0.03
+        )
+
         def get_ml_calamity_penalty(mat_name: str, base_gwp: float) -> float:
+            """
+            Calculates 100-year calamity aging & climate penalty per kg.
+            For bio-based/carbon negative materials, applies degradation on biogenic storage permanence.
+            For standard materials, uses the trained ML prediction bounded by physical limits.
+            """
+            if base_gwp <= 0:
+                # Carbon sequestering material: small degradation under extreme climate stress
+                return abs(base_gwp) * climate_stress * 0.8
+            
+            # Standard positive GWP materials: ML model inference
             pred_req = PredictionRequest(
                 material_name=mat_name,
                 extreme_weather_events=req.extreme_weather_events,
@@ -243,19 +561,19 @@ class BuildingService:
             )
             try:
                 pred_100 = prediction_service.predict_100yr_gwp(pred_req, base_gwp)
-                return max(0.0, pred_100 - base_gwp)
+                diff = pred_100 - base_gwp
+                # Bounded penalty: between 0 and 40% of base GWP
+                return max(0.005, min(diff, base_gwp * 0.40))
             except Exception as e:
                 logger.warning("ML prediction fallback for %s: %s", mat_name, e)
-                # Calamity baseline formula: 15% to 30% climate stress factor
-                stress = (req.extreme_weather_events / 50.0) * 0.15 + (req.temperature_anomaly / 5.0) * 0.15
-                return max(0.01, abs(base_gwp) * stress)
+                return max(0.005, base_gwp * climate_stress * 1.5)
 
         # Map the 4 user selections
         selections = [
             ("substructure", "Substructure & Foundation", req.substructure, 300.0, 0.02, 0.05),
             ("superstructure", "Superstructure & Structural Frame", req.superstructure, 500.0, 0.05, 0.06),
-            ("facade", "Enclosure, Facade & Exterior Walls", req.facade, 160.0, 0.35, 0.05),
-            ("roofing_insulation", "Roofing, Insulation & Internal Partitions", req.roofing_insulation, 60.0, 0.50, 0.04),
+            ("facade", "Enclosure, Facade & Exterior Walls", req.facade, 160.0, 0.25, 0.05),
+            ("roofing_insulation", "Roofing, Insulation & Internal Partitions", req.roofing_insulation, 60.0, 0.35, 0.04),
         ]
 
         assemblies: List[AssemblyLCABreakdown] = []
@@ -280,17 +598,19 @@ class BuildingService:
             embodied_A1A3 = (mass_kg * base_gwp) / 1000.0
             transport_A4 = (mass_kg * transport_rate_per_kg) / 1000.0
             
-            # A5 Construction site activities (~8% of embodied or 15 kg/m2 minimum)
-            construction_A5 = max(0.0, abs(embodied_A1A3) * 0.08)
+            # A5 Construction site activities (mass-based crane/fuel work: ~12-15 kg CO2/tonne)
+            construction_A5 = mass_tonnes * 0.015
 
             # B2-B5 Maintenance & Replacement over 100 years
-            maintenance_B2B5 = abs(embodied_A1A3) * maint_factor
+            if base_gwp < 0:
+                maintenance_B2B5 = mass_tonnes * 0.025 * (maint_factor / 0.10)
+                demolition_C1C4 = mass_tonnes * 0.015 * (demo_factor / 0.05)
+            else:
+                maintenance_B2B5 = max(mass_tonnes * 0.015, embodied_A1A3 * maint_factor)
+                demolition_C1C4 = max(mass_tonnes * 0.010, embodied_A1A3 * demo_factor)
 
             # B1-B7 Climate Calamity dynamic impact
             calamity_B1B7 = (mass_kg * calamity_penalty_per_kg) / 1000.0
-
-            # C1-C4 Deconstruction & End of Life Demolition
-            demolition_C1C4 = abs(embodied_A1A3) * demo_factor
 
             total_assembly_100yr = (
                 embodied_A1A3 + transport_A4 + construction_A5 +
@@ -326,7 +646,7 @@ class BuildingService:
             total_maintenance_B2B5 + total_calamity_B1B7 + total_demolition_C1C4
         )
 
-        # Conventional Baseline Building (Traditional Portland, Virgin Steel, Brick, XPS Foam)
+        # Conventional Baseline Building Reference (Traditional Portland, Virgin Steel, Brick, XPS Foam)
         base_sub_mass = gfa * 300.0 / 1000.0
         base_super_mass = gfa * 500.0 / 1000.0
         base_facade_mass = gfa * 160.0 / 1000.0
@@ -339,11 +659,11 @@ class BuildingService:
             (base_roof_mass * 1000.0 * 2.800)
         ) / 1000.0
 
-        base_total_mass_kg = (base_sub_mass + base_super_mass + base_facade_mass + base_roof_mass) * 1000.0
-        base_transport = (base_total_mass_kg * transport_rate_per_kg) / 1000.0
-        base_construction = base_embodied * 0.08
-        base_maintenance = base_embodied * 0.28
-        base_calamity = base_embodied * 0.25
+        base_total_mass_t = base_sub_mass + base_super_mass + base_facade_mass + base_roof_mass
+        base_transport = (base_total_mass_t * 1000.0 * transport_rate_per_kg) / 1000.0
+        base_construction = base_total_mass_t * 0.015
+        base_maintenance = base_embodied * 0.20
+        base_calamity = base_embodied * climate_stress * 1.5
         base_demolition = base_embodied * 0.05
         baseline_100yr = (
             base_embodied + base_transport + base_construction +
@@ -353,7 +673,7 @@ class BuildingService:
         carbon_savings = max(0.0, baseline_100yr - total_100yr)
         savings_pct = (carbon_savings / baseline_100yr * 100.0) if baseline_100yr > 0 else 0.0
 
-        # Construct multi-year timeline trajectory across 25, 50, and 100 years
+        # Construct multi-year timeline trajectory across 25, 50, 75, and 100 years
         # Year 0: As-built handover (A1-A3 + A4 + A5)
         yr0 = total_embodied_A1A3 + total_transport_A4 + total_construction_A5
         base_yr0 = base_embodied + base_transport + base_construction
@@ -364,13 +684,13 @@ class BuildingService:
         yr25 = yr0 + yr25_maint + yr25_calam
         base_yr25 = base_yr0 + (base_maintenance * 0.25) + (base_calamity * 0.25)
 
-        # Year 50: Yr25 + 50-yr maintenance + 25% calamity
+        # Year 50: Yr25 + 50-yr maintenance + 50% calamity
         yr50_maint = total_maintenance_B2B5 * 0.50
         yr50_calam = total_calamity_B1B7 * 0.50
         yr50 = yr0 + yr50_maint + yr50_calam
         base_yr50 = base_yr0 + (base_maintenance * 0.50) + (base_calamity * 0.50)
 
-        # Year 75: Yr50 + 75-yr maintenance + 25% calamity
+        # Year 75: Yr50 + 75-yr maintenance + 75% calamity
         yr75_maint = total_maintenance_B2B5 * 0.75
         yr75_calam = total_calamity_B1B7 * 0.75
         yr75 = yr0 + yr75_maint + yr75_calam
