@@ -10,6 +10,7 @@ import {
   Scale, Info, Sparkles, Sliders, Calendar, ChevronRight, HelpCircle
 } from 'lucide-react';
 import MaterialSelector from './MaterialSelector';
+import InteractiveBuildingDiagram from './InteractiveBuildingDiagram';
 import './BuildingLCA.css';
 
 const API = (import.meta.env.VITE_API_URL || '') + '/api/v1';
@@ -2152,6 +2153,7 @@ const DEFAULT_CLASSES = [
 
 const BuildingLCA = () => {
   const [classes, setClasses] = useState(DEFAULT_CLASSES);
+  const [hoveredClass, setHoveredClass] = useState(null);
   const [selectedNormalMaterials, setSelectedNormalMaterials] = useState({
     substructure: 'Concrete (Ready mix - general)',
     superstructure: 'Reinforced Concrete (C30/37 structural)',
@@ -2277,13 +2279,39 @@ const BuildingLCA = () => {
               </div>
             </div>
 
-            <div className="classes-list">
+            {/* Interactive Architectural Cutaway Model */}
+            <InteractiveBuildingDiagram
+              hoveredClass={hoveredClass}
+              onHoverClass={setHoveredClass}
+              onSelectClass={(classId) => {
+                setHoveredClass(classId);
+                const el = document.getElementById(`class-section-${classId}`);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }}
+              selectedNormalMaterials={selectedNormalMaterials}
+              selectedGreenMaterials={selectedGreenMaterials}
+            />
+
+            <div className="classes-list" style={{ marginTop: '1.25rem' }}>
               {classes.map((cls, idx) => {
                 const normalOptions = cls.materials.filter(m => !m.is_green).map(m => m.name);
                 const greenOptions = cls.materials.filter(m => m.is_green).map(m => m.name);
+                const isHovered = hoveredClass === cls.class_id;
 
                 return (
-                  <div key={cls.class_id} className="class-section" style={{marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border-color)'}}>
+                  <div
+                    key={cls.class_id}
+                    id={`class-section-${cls.class_id}`}
+                    className={`class-section ${isHovered ? `highlighted-by-diagram highlighted-${cls.class_id}` : ''}`}
+                    onMouseEnter={() => setHoveredClass(cls.class_id)}
+                    onMouseLeave={() => setHoveredClass(null)}
+                    style={{
+                      marginBottom: '1.5rem',
+                      paddingBottom: '1.5rem',
+                      borderBottom: '1px solid var(--border-color)',
+                      transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}
+                  >
                     <div className="class-header" style={{marginBottom: '1rem'}}>
                       <div className="class-number-badge">{idx + 1}</div>
                       <div>
