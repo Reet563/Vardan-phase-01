@@ -2621,107 +2621,187 @@ const BuildingLCA = () => {
                 </div>
               )}
 
-              {resultGreen?.stage_breakdown && activeChartTab === 'stages' && (
-                <ResponsiveContainer width="100%" height={360}>
-                  <BarChart
-                    data={Object.entries(resultGreen.stage_breakdown).map(([stage, val]) => ({
-                      stage: stage.split(' (')[0],
-                      fullName: stage,
-                      tonnes: val,
-                    }))}
-                    margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
-                    <XAxis
-                      dataKey="stage"
-                      tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      domain={['auto', 'auto']}
-                      tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={v => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k t` : `${Math.round(v)} t`}
-                      label={{ value: 'Tonnes CO₂e', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11, dy: 40 }}
-                    />
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (!active || !payload?.length) return null;
-                        const data = payload[0].payload;
-                        return (
-                          <div className="wblca-tooltip">
-                            <p className="tooltip-title">{data.fullName}</p>
-                            <p style={{ color: payload[0].color }}>
-                              Emissions: <strong>{Number(data.tonnes).toLocaleString()} tonnes CO₂e</strong>
-                            </p>
-                          </div>
-                        );
-                      }}
-                    />
-                    <Bar dataKey="tonnes" name="Lifecycle Stage Emissions (Green)" radius={[6, 6, 0, 0]} maxBarSize={60}>
-                      {Object.entries(resultGreen.stage_breakdown).map(([stage, val], index) => {
-                        const colors = ['#00d4aa', '#38bdf8', '#818cf8', '#a78bfa', '#fbbf24', '#f87171'];
-                        return <Cell key={`cell-${index}`} fill={val < 0 ? '#10b981' : colors[index % colors.length]} />;
+              {resultGreen?.stage_breakdown && resultNormal?.stage_breakdown && activeChartTab === 'stages' && (
+                <div className="chart-block" style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div>
+                      <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 600 }}>
+                        Lifecycle Module Comparison: Green vs Normal (A1 to C4)
+                      </h4>
+                      <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                        Side-by-side carbon allocation across all standard EN 15978 / ISO 21930 lifecycle stages.
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--emerald)', fontWeight: 600 }}>
+                        <span style={{ width: 10, height: 10, borderRadius: '2px', backgroundColor: '#10b981', display: 'inline-block' }} />
+                        Green Assembly
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--amber)', fontWeight: 600 }}>
+                        <span style={{ width: 10, height: 10, borderRadius: '2px', backgroundColor: '#f59e0b', display: 'inline-block' }} />
+                        Normal Baseline
+                      </span>
+                    </div>
+                  </div>
+                  <ResponsiveContainer width="100%" height={380}>
+                    <BarChart
+                      data={Object.keys(resultGreen.stage_breakdown).map((stageKey) => {
+                        const greenVal = resultGreen.stage_breakdown[stageKey] || 0;
+                        const normVal = resultNormal.stage_breakdown[stageKey] || 0;
+                        const shortName = stageKey.split(' ')[0];
+                        return {
+                          stageKey,
+                          shortName,
+                          fullName: stageKey,
+                          green: greenVal,
+                          normal: normVal,
+                          difference: Math.round(normVal - greenVal),
+                        };
                       })}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                      margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                      barGap={6}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
+                      <XAxis
+                        dataKey="shortName"
+                        tick={{ fill: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        domain={['auto', 'auto']}
+                        tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={v => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k t` : `${Math.round(v)} t`}
+                        label={{ value: 'Tonnes CO₂e', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11, dy: 40 }}
+                      />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (!active || !payload?.length) return null;
+                          const d = payload[0].payload;
+                          const savings = d.normal ? Math.round(((d.normal - d.green) / Math.abs(d.normal)) * 100) : 0;
+                          return (
+                            <div className="wblca-tooltip" style={{ minWidth: '250px' }}>
+                              <p className="tooltip-title" style={{ fontWeight: 700, marginBottom: '0.4rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.3rem' }}>
+                                {d.fullName}
+                              </p>
+                              <p style={{ color: '#10b981', margin: '4px 0', fontSize: '0.85rem' }}>
+                                Green Assembly: <strong>{Number(d.green).toLocaleString()} t CO₂e</strong>
+                              </p>
+                              <p style={{ color: '#f59e0b', margin: '4px 0', fontSize: '0.85rem' }}>
+                                Normal Baseline: <strong>{Number(d.normal).toLocaleString()} t CO₂e</strong>
+                              </p>
+                              <p style={{ color: '#38bdf8', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '0.82rem', fontWeight: 600 }}>
+                                Stage Reduction: <strong>{Number(d.difference).toLocaleString()} t</strong> ({savings > 0 ? `-${savings}%` : `${savings}%`})
+                              </p>
+                            </div>
+                          );
+                        }}
+                      />
+                      <Legend verticalAlign="top" height={36} />
+                      <Bar dataKey="normal" name="Normal Baseline (t CO₂e)" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={38} />
+                      <Bar dataKey="green" name="Green Assembly (t CO₂e)" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={38} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               )}
 
-              {resultGreen?.assemblies && activeChartTab === 'classes' && (
-                <ResponsiveContainer width="100%" height={360}>
-                  <BarChart
-                    data={resultGreen.assemblies.map(a => ({
-                      name: a.class_name.split(' & ')[0],
-                      material: a.material_name,
-                      embodied: a.embodied_A1A3_tonnes,
-                      transport: a.transport_A4_tonnes,
-                      calamity: a.calamity_climate_B1B7_tonnes,
-                      total: a.total_100yr_tonnes,
-                    }))}
-                    margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      domain={['auto', 'auto']}
-                      tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={v => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k t` : `${Math.round(v)} t`}
-                      label={{ value: 'Tonnes CO₂e', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11, dy: 40 }}
-                    />
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (!active || !payload?.length) return null;
-                        const d = payload[0].payload;
-                        return (
-                          <div className="wblca-tooltip">
-                            <p className="tooltip-title">{d.name}</p>
-                            <p className="tooltip-sub">Material: {d.material}</p>
-                            <p style={{ color: '#00d4aa' }}>Upfront Embodied: <strong>{d.embodied} t</strong></p>
-                            <p style={{ color: '#38bdf8' }}>Transport A4: <strong>{d.transport} t</strong></p>
-                            <p style={{ color: '#fbbf24' }}>Calamity Surcharge: <strong>{d.calamity} t</strong></p>
-                            <p style={{ color: '#fff', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 4, marginTop: 4 }}>
-                              Total 100-Yr Impact: <strong>{d.total} t</strong>
-                            </p>
-                          </div>
-                        );
-                      }}
-                    />
-                    <Legend verticalAlign="top" height={36} />
-                    <Bar dataKey="embodied" name="Upfront Embodied (Green)" fill="#00d4aa" stackId="a" />
-                    <Bar dataKey="transport" name="Logistics Transit (Green)" fill="#38bdf8" stackId="a" />
-                    <Bar dataKey="calamity" name="Dynamic Calamity (Green)" fill="#fbbf24" stackId="a" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+              {resultGreen?.assemblies && resultNormal?.assemblies && activeChartTab === 'classes' && (
+                <div className="chart-block" style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div>
+                      <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 600 }}>
+                        Assembly Class 100-Year Carbon Comparison: Green vs Normal
+                      </h4>
+                      <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                        Cradle-to-grave emissions contribution by building structural and envelope subsystem.
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--emerald)', fontWeight: 600 }}>
+                        <span style={{ width: 10, height: 10, borderRadius: '2px', backgroundColor: '#10b981', display: 'inline-block' }} />
+                        Green Materials
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--amber)', fontWeight: 600 }}>
+                        <span style={{ width: 10, height: 10, borderRadius: '2px', backgroundColor: '#f59e0b', display: 'inline-block' }} />
+                        Normal Materials
+                      </span>
+                    </div>
+                  </div>
+                  <ResponsiveContainer width="100%" height={380}>
+                    <BarChart
+                      data={resultGreen.assemblies.map((gAss, i) => {
+                        const nAss = resultNormal.assemblies[i];
+                        return {
+                          name: gAss.class_name.split(' & ')[0],
+                          fullName: gAss.class_name,
+                          green_material: gAss.material_name,
+                          normal_material: nAss?.material_name,
+                          green_gwp: gAss.base_gwp,
+                          normal_gwp: nAss?.base_gwp,
+                          green_total: gAss.total_100yr_tonnes,
+                          normal_total: nAss?.total_100yr_tonnes || 0,
+                          savings: Math.round((nAss?.total_100yr_tonnes || 0) - gAss.total_100yr_tonnes),
+                        };
+                      })}
+                      margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                      barGap={8}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fill: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        domain={['auto', 'auto']}
+                        tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={v => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k t` : `${Math.round(v)} t`}
+                        label={{ value: 'Tonnes CO₂e (100-Yr)', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11, dy: 40 }}
+                      />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (!active || !payload?.length) return null;
+                          const d = payload[0].payload;
+                          const savingsPct = d.normal_total ? Math.round(((d.normal_total - d.green_total) / Math.abs(d.normal_total)) * 100) : 0;
+                          return (
+                            <div className="wblca-tooltip" style={{ minWidth: '280px' }}>
+                              <p className="tooltip-title" style={{ fontWeight: 700, marginBottom: '0.4rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.3rem' }}>
+                                {d.fullName}
+                              </p>
+                              <div style={{ marginBottom: '6px' }}>
+                                <p style={{ color: '#10b981', margin: '2px 0', fontSize: '0.85rem' }}>
+                                  <strong>Green:</strong> {d.green_material}
+                                </p>
+                                <p style={{ color: '#10b981', margin: '2px 0', fontSize: '0.8rem' }}>
+                                  Total: <strong>{Number(d.green_total).toLocaleString()} t CO₂e</strong> (GWP: {d.green_gwp} kg/kg)
+                                </p>
+                              </div>
+                              <div style={{ marginBottom: '6px' }}>
+                                <p style={{ color: '#f59e0b', margin: '2px 0', fontSize: '0.85rem' }}>
+                                  <strong>Normal:</strong> {d.normal_material}
+                                </p>
+                                <p style={{ color: '#f59e0b', margin: '2px 0', fontSize: '0.8rem' }}>
+                                  Total: <strong>{Number(d.normal_total).toLocaleString()} t CO₂e</strong> (GWP: {d.normal_gwp} kg/kg)
+                                </p>
+                              </div>
+                              <p style={{ color: '#38bdf8', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '0.82rem', fontWeight: 600 }}>
+                                Net Class Avoided Carbon: <strong>{Number(d.savings).toLocaleString()} t</strong> ({savingsPct > 0 ? `-${savingsPct}%` : `${savingsPct}%`})
+                              </p>
+                            </div>
+                          );
+                        }}
+                      />
+                      <Legend verticalAlign="top" height={36} />
+                      <Bar dataKey="normal_total" name="Normal Assembly Total (t CO₂e)" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={44} />
+                      <Bar dataKey="green_total" name="Green Assembly Total (t CO₂e)" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={44} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               )}
             </div>
           </div>
