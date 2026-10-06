@@ -22,17 +22,32 @@ const API = (import.meta.env.VITE_API_URL || '') + '/api/v1';
 /* ── Custom Recharts Tooltip ── */
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
+  const stageName = payload[0]?.payload?.name || label;
+  const desc = payload[0]?.payload?.description || '';
   return (
     <div className="chart-tooltip">
-      <p className="chart-tooltip-label">{label}</p>
+      <p className="chart-tooltip-label" style={{ fontWeight: 700, marginBottom: desc ? 2 : 6, color: '#f8fafc' }}>
+        {stageName}
+      </p>
+      {desc && (
+        <p style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: 8, lineHeight: 1.35 }}>
+          {desc}
+        </p>
+      )}
       {payload.map((p, i) => {
         if (p.value === null || p.value === undefined) return null;
         const formatted = typeof p.value === 'number' ? p.value.toFixed(4) : p.value;
+        const color = p.color || (p.dataKey === 'Alternative' ? '#00d4aa' : '#a78bfa');
         return (
-          <p key={i} style={{ color: p.color || '#38bdf8', margin: '4px 0', fontSize: '0.8rem' }}>
-            <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', backgroundColor: p.color || '#38bdf8', marginRight: 6 }} />
-            {p.name}: <strong>{formatted} kg CO₂e/kg</strong>
-          </p>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, margin: '4px 0', fontSize: '0.78rem' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
+              <span style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {p.name}:
+              </span>
+            </span>
+            <strong style={{ color: '#fff', fontVariantNumeric: 'tabular-nums' }}>{formatted} kg CO₂e/kg</strong>
+          </div>
         );
       })}
     </div>
@@ -290,7 +305,7 @@ export default function Dashboard({ onBackToLanding, defaultTab = 'material' }) 
       .catch(() => { setError('Could not reach the backend. Is FastAPI running on port 8000?'); setMatLoading(false); });
   }, []);
 
-  /* Fetch alternatives & auto-predict when base material selected */
+  /* Fetch alternatives when material selected */
   useEffect(() => {
     if (!selected) {
       setAlternatives([]);
@@ -309,24 +324,51 @@ export default function Dashboard({ onBackToLanding, defaultTab = 'material' }) 
     axios.get(`${API}/materials/${encodeURIComponent(selected)}/alternatives`)
       .then(r => setAlternatives(r.data.alternatives || []))
       .catch(e => console.error("Failed to fetch alternatives", e));
-
-    // Auto calculate baseline for the selected material
-    const payload = {
-      material_name: selected,
-      ...params,
-      transport: transportActive ? {
-        vehicle_type: transportParams.vehicle_type,
-        distance_km: transportParams.distance_km,
-        load_weight_kg: transportParams.load_weight_kg,
-      } : null,
-    };
-
-    axios.post(`${API}/predict`, payload)
-      .then(res => setResult(res.data))
-      .catch(err => console.error("Failed auto-predict for selected material", err));
   }, [selected]);
 
-  /* Real-time selection handler for alternatives with instant prediction calculation */
+  /* Live reactive prediction whenever material, parameters, transport or alternative changes */
+  useEffect(() => {
+    if (!selected) {
+      setResult(null);
+      setAltResult(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const payload = {
+          material_name: selected,
+          ...params,
+          transport: transportActive ? {
+            vehicle_type: transportParams.vehicle_type,
+            distance_km: transportParams.distance_km,
+            load_weight_kg: transportParams.load_weight_kg,
+          } : null,
+        };
+
+        const req1 = axios.post(`${API}/predict`, payload);
+        let req2 = null;
+        if (selectedAlternative) {
+          req2 = axios.post(`${API}/predict`, { ...payload, material_name: selectedAlternative });
+        }
+
+        if (req2) {
+          const [res1, res2] = await Promise.all([req1, req2]);
+          setResult(res1.data);
+          setAltResult(res2.data);
+        } else {
+          const res = await req1;
+          setResult(res.data);
+        }
+      } catch (err) {
+        console.error("Auto calculation error:", err);
+      }
+    }, 120);
+
+    return () => clearTimeout(timer);
+  }, [selected, selectedAlternative, params, transportActive, transportParams]);
+
+  /* Real-time selection handler for alternatives */
   const handleSelectAlternative = async (altName) => {
     if (!selected) return;
     
@@ -386,7 +428,7 @@ export default function Dashboard({ onBackToLanding, defaultTab = 'material' }) 
   const estTransportEmissionsKg = estTransportEmissionsG / 1000.0;
   const estPerKgTransportCo2e = transportParams.load_weight_kg > 0 ? (estTransportEmissionsKg / transportParams.load_weight_kg) : 0;
 
-  /* Trigger prediction */
+  /* Trigger prediction manually */
   const predict = async () => {
     if (!selected) return;
     setPredicting(true);
@@ -426,68 +468,65 @@ export default function Dashboard({ onBackToLanding, defaultTab = 'material' }) 
     }
   };
 
-  /* Chart data building */
+  /* Chart data building with strict modular LCA breakdown */
   let chartData = [];
   if (result) {
-    if (result.transport) {
-      chartData = [
-        {
-          name: '1. Upfront Embodied\n(A1–A3)',
-          shortName: 'A1–A3 Embodied',
-          Original: Number(result.base_gwp_A1A3 ?? 0),
-          ...(altResult ? { Alternative: Number(altResult.base_gwp_A1A3 ?? 0) } : {}),
-        },
-        {
-          name: '2. Logistics Transit\n(A4)',
-          shortName: 'A4 Transport',
-          Original: Number(result.transport.per_kg_transport_co2e ?? 0),
-          ...(altResult?.transport ? { Alternative: Number(altResult.transport.per_kg_transport_co2e ?? 0) } : {}),
-        },
-        {
-          name: '3. 100-yr Dynamic\n(B1–B7 Calamity)',
-          shortName: '100-yr Calamity',
-          Original: Number(result.predicted_100yr_gwp ?? 0),
-          ...(altResult ? { Alternative: Number(altResult.predicted_100yr_gwp ?? 0) } : {}),
-        },
-        {
-          name: '4. Total Lifecycle\n(Cradle-to-Lifespan)',
-          shortName: 'Net Lifecycle',
-          Original: Number(result.total_lifecycle_carbon || (result.predicted_100yr_gwp + result.transport.per_kg_transport_co2e)),
-          ...(altResult ? { Alternative: Number(altResult.total_lifecycle_carbon || (altResult.predicted_100yr_gwp + (altResult.transport?.per_kg_transport_co2e || 0))) } : {}),
-        },
-      ];
-    } else {
-      chartData = [
-        {
-          name: 'Baseline GWP\n(A1–A3)',
-          shortName: 'Baseline A1-A3',
-          Original: Number(result.base_gwp_A1A3 ?? 0),
-          ...(altResult ? { Alternative: Number(altResult.base_gwp_A1A3 ?? 0) } : {}),
-        },
-        {
-          name: 'Predicted 100-yr\nDynamic GWP',
-          shortName: '100-yr Predicted',
-          Original: Number(result.predicted_100yr_gwp ?? 0),
-          ...(altResult ? { Alternative: Number(altResult.predicted_100yr_gwp ?? 0) } : {}),
-        },
-      ];
-    }
+    const origBase = Number(result.base_gwp_A1A3 ?? 0);
+    const origTransport = (transportActive && result.transport) ? Number(result.transport.per_kg_transport_co2e ?? 0) : 0;
+    const origPenalty = Number(result.calamity_carbon_penalty ?? Math.max(0, (result.predicted_100yr_gwp ?? origBase) - origBase));
+    const origTotal = origBase + origTransport + origPenalty;
+
+    const altBase = altResult ? Number(altResult.base_gwp_A1A3 ?? 0) : null;
+    const altTransport = (altResult && transportActive && altResult.transport) ? Number(altResult.transport.per_kg_transport_co2e ?? 0) : 0;
+    const altPenalty = altResult ? Number(altResult.calamity_carbon_penalty ?? Math.max(0, (altResult.predicted_100yr_gwp ?? altBase) - altBase)) : null;
+    const altTotal = altBase !== null ? (altBase + altTransport + altPenalty) : null;
+
+    chartData = [
+      {
+        name: 'Stage 1: Upfront Embodied Carbon (A1–A3)',
+        shortName: 'A1–A3 Embodied',
+        description: 'Raw materials extraction, processing & manufacturing emissions',
+        Original: Number(origBase.toFixed(4)),
+        ...(altBase !== null ? { Alternative: Number(altBase.toFixed(4)) } : {}),
+      },
+      {
+        name: 'Stage 2: Transport & Logistics (A4)',
+        shortName: 'A4 Transport',
+        description: 'Transit haulage emissions normalized per kg cargo weight',
+        Original: Number(origTransport.toFixed(4)),
+        ...(altBase !== null ? { Alternative: Number(altTransport.toFixed(4)) } : {}),
+      },
+      {
+        name: 'Stage 3: Operational Calamity & Wear (B1–B7)',
+        shortName: 'B1–B7 Calamity',
+        description: '100-year operational climate stress & degradation penalty',
+        Original: Number(origPenalty.toFixed(4)),
+        ...(altBase !== null ? { Alternative: Number(altPenalty.toFixed(4)) } : {}),
+      },
+      {
+        name: 'Stage 4: Net 100-Year Lifecycle Total',
+        shortName: 'Net Lifecycle',
+        description: 'Complete 100-year cradle-to-grave cumulative footprint (A1–A4 + B1–B7)',
+        Original: Number(origTotal.toFixed(4)),
+        ...(altBase !== null ? { Alternative: Number(altTotal.toFixed(4)) } : {}),
+      },
+    ];
   }
 
   /* 100-Year Dynamic Trajectory Data */
   let trajectoryData = [];
   if (result) {
     const origBase = Number(result.base_gwp_A1A3 ?? 0);
-    const origTransport = Number(result.transport?.per_kg_transport_co2e ?? 0);
+    const origTransport = (transportActive && result.transport) ? Number(result.transport.per_kg_transport_co2e ?? 0) : 0;
     const origPred = Number(result.predicted_100yr_gwp ?? origBase);
-    const origPenalty = Math.max(0, origPred - origBase);
+    const origPenalty = origPred - origBase;
     const origYr0 = origBase + origTransport;
 
     const altBase = altResult ? Number(altResult.base_gwp_A1A3 ?? 0) : null;
-    const altTransport = altResult?.transport ? Number(altResult.transport.per_kg_transport_co2e ?? 0) : 0;
+    const altTransport = (altResult && transportActive && altResult.transport) ? Number(altResult.transport.per_kg_transport_co2e ?? 0) : 0;
     const altPred = altResult ? Number(altResult.predicted_100yr_gwp ?? altBase) : null;
-    const altPenalty = altPred !== null ? Math.max(0, altPred - altBase) : 0;
-    const altYr0 = altBase !== null ? altBase + altTransport : null;
+    const altPenalty = (altPred !== null && altBase !== null) ? (altPred - altBase) : 0;
+    const altYr0 = altBase !== null ? (altBase + altTransport) : null;
 
     trajectoryData = [
       {
@@ -948,23 +987,15 @@ export default function Dashboard({ onBackToLanding, defaultTab = 'material' }) 
             {result ? (
               chartMode === 'stages' ? (
                 <ResponsiveContainer width="100%" height={320}>
-                  <BarChart data={chartData} barCategoryGap="30%" margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                  <BarChart data={chartData} barCategoryGap="25%" margin={{ top: 20, right: 25, left: 10, bottom: 20 }}>
                     <defs>
                       <linearGradient id="gradBaseline" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#00d4aa" stopOpacity={0.9} />
-                        <stop offset="100%" stopColor="#00d4aa" stopOpacity={0.4} />
-                      </linearGradient>
-                      <linearGradient id="gradTransport" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.9} />
-                        <stop offset="100%" stopColor="#fbbf24" stopOpacity={0.4} />
-                      </linearGradient>
-                      <linearGradient id="gradPredicted" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.9} />
-                        <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.4} />
+                        <stop offset="0%" stopColor="#00d4aa" stopOpacity={0.95} />
+                        <stop offset="100%" stopColor="#059669" stopOpacity={0.65} />
                       </linearGradient>
                       <linearGradient id="gradTotal" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.9} />
-                        <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.4} />
+                        <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.95} />
+                        <stop offset="100%" stopColor="#6366f1" stopOpacity={0.65} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(56,90,150,0.2)" vertical={false} />
@@ -974,25 +1005,17 @@ export default function Dashboard({ onBackToLanding, defaultTab = 'material' }) 
                       axisLine={false} tickLine={false}
                     />
                     <YAxis
-                      domain={['auto', 'auto']}
+                      domain={[dataMin => (dataMin < 0 ? Math.floor(dataMin * 1.15 * 100) / 100 : 0), 'auto']}
                       tick={{ fill: 'var(--text-muted)', fontSize: 11, fontFamily: 'Inter' }}
                       axisLine={false} tickLine={false}
                       tickFormatter={v => (typeof v === 'number' ? v.toFixed(3) : v)}
                       label={{ value: 'kg CO₂e / kg', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11, dy: 50 }}
                     />
                     <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(56,90,150,0.1)' }} />
-                    <Legend verticalAlign="top" height={36} wrapperStyle={{ paddingBottom: 10 }} />
-                    <Bar dataKey="Original" name={result.material_name} fill="url(#gradTotal)" radius={[8, 8, 0, 0]} maxBarSize={60} />
+                    <Legend verticalAlign="top" height={36} wrapperStyle={{ paddingBottom: 10, fontSize: '0.8rem', fontFamily: 'Inter' }} />
+                    <Bar dataKey="Original" name={result.material_name} fill="url(#gradTotal)" radius={[6, 6, 0, 0]} maxBarSize={56} />
                     {altResult && (
-                      <Bar dataKey="Alternative" name={altResult.material_name} fill="url(#gradBaseline)" radius={[8, 8, 0, 0]} maxBarSize={60} />
-                    )}
-                    {typeof result.base_gwp_A1A3 === 'number' && (
-                      <ReferenceLine
-                        y={result.base_gwp_A1A3}
-                        stroke="rgba(0,212,170,0.5)"
-                        strokeDasharray="6 3"
-                        label={{ value: 'A1-A3 Base', fill: 'var(--teal)', fontSize: 11, position: 'right' }}
-                      />
+                      <Bar dataKey="Alternative" name={altResult.material_name} fill="url(#gradBaseline)" radius={[6, 6, 0, 0]} maxBarSize={56} />
                     )}
                   </BarChart>
                 </ResponsiveContainer>
