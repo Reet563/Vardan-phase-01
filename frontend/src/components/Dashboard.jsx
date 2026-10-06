@@ -280,6 +280,8 @@ export default function Dashboard({ onBackToLanding, defaultTab = 'material' }) 
 
   const [alternatives, setAlternatives] = useState([]);
   const [selectedAlternative, setSelectedAlternative] = useState('');
+  const [reasoningData, setReasoningData] = useState(null);
+  const [altLoading, setAltLoading] = useState(false);
 
   /* Fetch material list on mount */
   useEffect(() => {
@@ -288,17 +290,93 @@ export default function Dashboard({ onBackToLanding, defaultTab = 'material' }) 
       .catch(() => { setError('Could not reach the backend. Is FastAPI running on port 8000?'); setMatLoading(false); });
   }, []);
 
-  /* Fetch alternatives when material selected */
+  /* Fetch alternatives & auto-predict when base material selected */
   useEffect(() => {
     if (!selected) {
       setAlternatives([]);
       setSelectedAlternative('');
+      setAltResult(null);
+      setReasoningData(null);
       return;
     }
+    
+    // Clear previous alternative state
+    setSelectedAlternative('');
+    setAltResult(null);
+    setReasoningData(null);
+
+    // Fetch alternatives
     axios.get(`${API}/materials/${encodeURIComponent(selected)}/alternatives`)
-      .then(r => setAlternatives(r.data.alternatives))
+      .then(r => setAlternatives(r.data.alternatives || []))
       .catch(e => console.error("Failed to fetch alternatives", e));
+
+    // Auto calculate baseline for the selected material
+    const payload = {
+      material_name: selected,
+      ...params,
+      transport: transportActive ? {
+        vehicle_type: transportParams.vehicle_type,
+        distance_km: transportParams.distance_km,
+        load_weight_kg: transportParams.load_weight_kg,
+      } : null,
+    };
+
+    axios.post(`${API}/predict`, payload)
+      .then(res => setResult(res.data))
+      .catch(err => console.error("Failed auto-predict for selected material", err));
   }, [selected]);
+
+  /* Real-time selection handler for alternatives with instant prediction calculation */
+  const handleSelectAlternative = async (altName) => {
+    if (!selected) return;
+    
+    const nextAlt = (selectedAlternative === altName) ? '' : altName;
+    setSelectedAlternative(nextAlt);
+
+    if (!nextAlt) {
+      setAltResult(null);
+      setReasoningData(null);
+      return;
+    }
+
+    setAltLoading(true);
+    try {
+      const payload = {
+        material_name: nextAlt,
+        ...params,
+        transport: transportActive ? {
+          vehicle_type: transportParams.vehicle_type,
+          distance_km: transportParams.distance_km,
+          load_weight_kg: transportParams.load_weight_kg,
+        } : null,
+      };
+      
+      const reqAlt = axios.post(`${API}/predict`, payload);
+      const reqOrig = axios.post(`${API}/predict`, { ...payload, material_name: selected });
+
+      const [resOrig, resAlt] = await Promise.all([reqOrig, reqAlt]);
+      setResult(resOrig.data);
+      setAltResult(resAlt.data);
+
+      // Call AI reasoning comparator
+      try {
+        const resReason = await axios.post(`${API}/reason`, {
+          mat1_name: selected,
+          mat1_carbon: resOrig.data.base_gwp_A1A3,
+          mat2_name: nextAlt,
+          mat2_carbon: resAlt.data.base_gwp_A1A3,
+        });
+        setReasoningData(resReason.data);
+      } catch (rErr) {
+        console.warn('Reasoning endpoint non-fatal warning:', rErr);
+      }
+    } catch (err) {
+      console.error('Failed to calculate green alternative prediction:', err);
+      setError(err.response?.data?.detail || 'Failed to calculate alternative prediction.');
+    } finally {
+      setAltLoading(false);
+    }
+  };
 
   /* Client-side live estimate of transport emissions */
   const selectedVehicleObj = FLEET_VEHICLES.find(v => v.type === transportParams.vehicle_type) || FLEET_VEHICLES[1];
@@ -532,19 +610,40 @@ export default function Dashboard({ onBackToLanding, defaultTab = 'material' }) 
 
             {alternatives.length > 0 && (
               <div className="alternatives-wrap">
-                <h3 className="alternatives-title">🌿 Green Alternatives (Optional)</h3>
-                <p className="alternatives-desc">Select an alternative to compare emissions.</p>
+                <div className="alternatives-header">
+                  <h3 className="alternatives-title">
+                    <Leaf size={14} className="text-emerald" /> Verified Green Alternatives
+                  </h3>
+                  <span className="alternatives-count-badge">{alternatives.length} Matched</span>
+                </div>
+                <p className="alternatives-desc">Click any low-carbon alternative to instantly compare cradle-to-grave emissions side-by-side.</p>
                 <div className="alternatives-list">
-                  {alternatives.map(alt => (
-                    <div 
-                      key={alt.material_name} 
-                      className={`alternative-card ${selectedAlternative === alt.material_name ? 'selected' : ''}`}
-                      onClick={() => setSelectedAlternative(alt.material_name === selectedAlternative ? '' : alt.material_name)}
-                    >
-                      <div className="alt-name">{alt.material_name}</div>
-                      <div className="alt-carbon">{alt.embodied_carbon.toFixed(3)} kgCO₂e/kg</div>
-                    </div>
-                  ))}
+                  {alternatives.map(alt => {
+                    const isSelected = selectedAlternative === alt.material_name;
+                    return (
+                      <div 
+                        key={alt.material_name} 
+                        className={`alternative-card ${isSelected ? 'selected' : ''}`}
+                        onClick={() => handleSelectAlternative(alt.material_name)}
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={isSelected}
+                      >
+                        <div className="alt-card-header">
+                          <div className="alt-name">{alt.material_name}</div>
+                          {isSelected && <CheckCircle2 size={16} className="alt-check-icon" />}
+                        </div>
+                        <div className="alt-card-footer">
+                          <div className="alt-carbon-tag">
+                            <strong>{alt.embodied_carbon.toFixed(3)}</strong> kg CO₂e/kg
+                          </div>
+                          {alt.description && (
+                            <div className="alt-desc-text">{alt.description}</div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -961,6 +1060,80 @@ export default function Dashboard({ onBackToLanding, defaultTab = 'material' }) 
               </div>
             )}
           </div>
+
+          {/* Comparative Intelligence Card (When Green Alternative is selected) */}
+          {result && altResult && (
+            <div className="alternative-compare-card">
+              <div className="alt-compare-header">
+                <div className="alt-compare-badge">
+                  <Leaf size={15} /> Verified Green Alternative Active
+                </div>
+                <button 
+                  className="alt-clear-btn" 
+                  onClick={() => { setSelectedAlternative(''); setAltResult(null); setReasoningData(null); }}
+                  title="Remove alternative comparison"
+                >
+                  <X size={13} /> Deselect Alternative
+                </button>
+              </div>
+
+              <div className="alt-compare-hero">
+                <div className="alt-compare-vs">
+                  <div className="alt-compare-mat orig">
+                    <span className="mat-badge-type">ICE V5 Baseline</span>
+                    <span className="mat-title-str">{result.material_name}</span>
+                    <span className="mat-val-str">
+                      {(result.total_lifecycle_carbon || result.predicted_100yr_gwp).toFixed(4)}{' '}
+                      <small>kg CO₂e/kg</small>
+                    </span>
+                  </div>
+                  <div className="alt-compare-divider">VS</div>
+                  <div className="alt-compare-mat green">
+                    <span className="mat-badge-type green-badge">Verified Low-Carbon</span>
+                    <span className="mat-title-str">{altResult.material_name}</span>
+                    <span className="mat-val-str text-emerald">
+                      {(altResult.total_lifecycle_carbon || altResult.predicted_100yr_gwp).toFixed(4)}{' '}
+                      <small>kg CO₂e/kg</small>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="alt-savings-callout">
+                  <div className="savings-number">
+                    {(() => {
+                      const origTot = result.total_lifecycle_carbon || result.predicted_100yr_gwp;
+                      const altTot = altResult.total_lifecycle_carbon || altResult.predicted_100yr_gwp;
+                      const diff = origTot - altTot;
+                      const pct = origTot > 0 ? (diff / origTot) * 100 : 0;
+                      return `-${pct.toFixed(1)}%`;
+                    })()}
+                  </div>
+                  <div className="savings-desc">
+                    <span className="savings-title">Lifecycle Carbon Reduction</span>
+                    <span className="savings-diff-num">
+                      {(() => {
+                        const diff = (result.total_lifecycle_carbon || result.predicted_100yr_gwp) - (altResult.total_lifecycle_carbon || altResult.predicted_100yr_gwp);
+                        return `${diff.toFixed(4)} kg CO₂e/kg Avoided`;
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {reasoningData?.comparison && (
+                <div className="alt-ai-reasoning">
+                  <div className="ai-reason-header">
+                    <Zap size={14} className="text-emerald" />
+                    <span>Whitebox Decision Tree Intelligence</span>
+                  </div>
+                  <p className="ai-reason-text">{reasoningData.comparison}</p>
+                  {reasoningData.material_2 && (
+                    <p className="ai-reason-sub">{reasoningData.material_2}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Transport Detailed Calculation Card */}
           {result?.transport && (
