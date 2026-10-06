@@ -247,7 +247,7 @@ const FLEET_VEHICLES = [
 /* ══════════════════════════════════════════════════════════════
    Main Dashboard
 ══════════════════════════════════════════════════════════════ */
-export default function Dashboard() {
+export default function Dashboard({ onBackToLanding, defaultTab = 'material' }) {
   const [materials, setMaterials]   = useState([]);
   const [matLoading, setMatLoading] = useState(true);
   const [selected, setSelected]     = useState('');
@@ -274,7 +274,7 @@ export default function Dashboard() {
   const [error, setError]           = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   
-  const [mainTab, setMainTab]       = useState('material'); // 'material' | 'building'
+  const [mainTab, setMainTab]       = useState(defaultTab); // 'material' | 'building'
   const [chartMode, setChartMode]   = useState('stages');   // 'stages' | 'trajectory'
 
   const [alternatives, setAlternatives] = useState([]);
@@ -451,7 +451,12 @@ export default function Dashboard() {
 
       {/* ── Header ── */}
       <header className="header">
-        <div className="header-brand">
+        <div 
+          className="header-brand" 
+          onClick={onBackToLanding} 
+          style={{ cursor: onBackToLanding ? 'pointer' : 'default' }}
+          title={onBackToLanding ? 'Return to Welcome Landing Page' : 'Project Vardan'}
+        >
           <div className="header-logo">
             <Leaf size={22} />
           </div>
