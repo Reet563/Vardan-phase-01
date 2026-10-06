@@ -14,6 +14,7 @@ import {
   Building2, Calendar, Layers, BarChart3
 } from 'lucide-react';
 import BuildingLCA from './BuildingLCA.jsx';
+import ParticleBackground from './ParticleBackground.jsx';
 import './Dashboard.css';
 
 const API = (import.meta.env.VITE_API_URL || '') + '/api/v1';
@@ -447,7 +448,9 @@ export default function Dashboard({ onBackToLanding, defaultTab = 'material' }) 
   const penalty = result ? result.calamity_carbon_penalty : undefined;
 
   return (
-    <div className="dashboard">
+    <div className="dashboard" style={{ position: 'relative' }}>
+      {/* Particle Background Effect for Dashboard Tabs */}
+      <ParticleBackground />
 
       {/* ── Header ── */}
       <header className="header">

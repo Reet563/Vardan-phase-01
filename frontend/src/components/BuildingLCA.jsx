@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import MaterialSelector from './MaterialSelector';
 import InteractiveBuildingDiagram from './InteractiveBuildingDiagram';
+import ParticleBackground from './ParticleBackground';
 import './BuildingLCA.css';
 
 const API = (import.meta.env.VITE_API_URL || '') + '/api/v1';
@@ -2254,7 +2255,10 @@ const BuildingLCA = () => {
   }, [selectedNormalMaterials, selectedGreenMaterials, gfa, transitDistance, vehicleType, tempAnomaly, extremeEvents, seaLevelRise, policyScore]);
 
   return (
-    <div className="wblca-container">
+    <div className="wblca-container" style={{ position: 'relative' }}>
+      {/* Particle Background Effect for Building LCA */}
+      <ParticleBackground />
+
       {/* ── Subheader / Banner ── */}
       <div className="wblca-header-bar">
         <div>
