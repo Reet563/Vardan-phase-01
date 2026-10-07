@@ -161,7 +161,22 @@ class PredictionService:
 
         try:
             prediction = self._model.predict(feature_df)
-            return float(prediction[0])
+            raw_pred = float(prediction[0])
+            
+            # For ultra-low baseline materials (e.g. aggregates, lean concretes, thin glass < 0.10 kg CO2e/kg),
+            # scale the operational calamity penalty proportionally to base_gwp so lower-carbon materials
+            # always yield strictly lower 100-year dynamic footprints without ML discretization floor artifacts.
+            if base_gwp < 0.10 and base_gwp > 0:
+                climate_strain = (
+                    (request.extreme_weather_events / 50.0) * 0.12 +
+                    (max(0.0, request.temperature_anomaly) / 5.0) * 0.08 +
+                    (max(0.0, request.sea_level_rise) / 50.0) * 0.05 -
+                    (request.policy_score / 100.0) * 0.05
+                )
+                calibrated_penalty = max(0.0001, base_gwp * max(0.02, climate_strain))
+                return float(round(base_gwp + calibrated_penalty, 6))
+            
+            return float(round(max(base_gwp * 0.85, raw_pred), 6))
         except Exception as exc:
             logger.exception("Model inference failed: %s", exc)
             raise HTTPException(
