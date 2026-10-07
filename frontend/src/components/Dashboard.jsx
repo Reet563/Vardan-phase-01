@@ -518,14 +518,12 @@ export default function Dashboard({ onBackToLanding, defaultTab = 'material' }) 
   if (result) {
     const origBase = Number(result.base_gwp_A1A3 ?? 0);
     const origTransport = (transportActive && result.transport) ? Number(result.transport.per_kg_transport_co2e ?? 0) : 0;
-    const origPred = Number(result.predicted_100yr_gwp ?? origBase);
-    const origPenalty = origPred - origBase;
+    const origPenalty = Math.max(0, Number(result.calamity_carbon_penalty ?? (result.predicted_100yr_gwp - origBase)));
     const origYr0 = origBase + origTransport;
 
     const altBase = altResult ? Number(altResult.base_gwp_A1A3 ?? 0) : null;
     const altTransport = (altResult && transportActive && altResult.transport) ? Number(altResult.transport.per_kg_transport_co2e ?? 0) : 0;
-    const altPred = altResult ? Number(altResult.predicted_100yr_gwp ?? altBase) : null;
-    const altPenalty = (altPred !== null && altBase !== null) ? (altPred - altBase) : 0;
+    const altPenalty = altResult ? Math.max(0, Number(altResult.calamity_carbon_penalty ?? (altResult.predicted_100yr_gwp - altBase))) : 0;
     const altYr0 = altBase !== null ? (altBase + altTransport) : null;
 
     trajectoryData = [
@@ -918,33 +916,21 @@ export default function Dashboard({ onBackToLanding, defaultTab = 'material' }) 
               />
             )}
             <MetricCard
-              label="Predicted 100-Yr Dynamic GWP"
-              value={result?.predicted_100yr_gwp ?? null}
+              label="100-Yr Calamity & Wear (B1–B7)"
+              value={result?.calamity_carbon_penalty ?? null}
               unit="kg CO₂e/kg"
-              icon={TrendingUp}
-              color="var(--cyan)"
-              delta={penalty}
-              subtitle="Operational Degradation & Calamity"
+              icon={AlertTriangle}
+              color="var(--rose)"
+              subtitle="Operational Weathering & Repair Burden"
             />
-            {result?.transport ? (
-              <MetricCard
-                label="Net 100-Yr Project Footprint"
-                value={result.total_lifecycle_carbon}
-                unit="kg CO₂e/kg"
-                icon={CheckCircle2}
-                color="var(--violet)"
-                subtitle="A1–A3 + A4 + B1–B7 Combined"
-              />
-            ) : (
-              <MetricCard
-                label="Calamity & Repair Penalty"
-                value={result?.calamity_carbon_penalty ?? null}
-                unit="kg CO₂e/kg"
-                icon={AlertTriangle}
-                color={penalty !== undefined ? (penalty > 0 ? 'var(--rose)' : 'var(--teal)') : 'var(--amber)'}
-                subtitle="Attributed Climate Burden"
-              />
-            )}
+            <MetricCard
+              label="Net 100-Yr Project Footprint"
+              value={result?.total_lifecycle_carbon || (result ? (result.base_gwp_A1A3 + (result.transport?.per_kg_transport_co2e || 0) + result.calamity_carbon_penalty) : null)}
+              unit="kg CO₂e/kg"
+              icon={CheckCircle2}
+              color="var(--violet)"
+              subtitle={result?.transport ? "A1–A3 + A4 + B1–B7 Combined" : "A1–A3 + B1–B7 Combined"}
+            />
           </div>
 
           {/* Chart Section */}
