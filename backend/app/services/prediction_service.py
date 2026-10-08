@@ -160,10 +160,7 @@ class PredictionService:
         feature_df = self._build_feature_dataframe(request, base_gwp)
 
         try:
-            prediction = self._model.predict(feature_df)
-            raw_pred = float(prediction[0])
-            
-            # Formulate physical 100-year operational climate strain rate
+            # Formulate physical 100-year operational climate strain rate from climate scenario
             hazard_factor = (request.extreme_weather_events / 50.0) * 0.18
             thermal_factor = (max(0.0, request.temperature_anomaly + 2.0) / 7.0) * 0.12
             slr_factor = (max(0.0, request.sea_level_rise + 5.0) / 55.0) * 0.08
@@ -171,18 +168,17 @@ class PredictionService:
 
             climate_rate = max(0.03, (hazard_factor + thermal_factor + slr_factor - policy_mitigation))
             
-            # Derive calamity maintenance penalty:
-            # Calamity is always positive (operational wear/damage accumulated over 100 years).
-            # Model prediction guided with physical lower bound.
-            ml_penalty = raw_pred - base_gwp
-            calibrated_penalty = max(base_gwp * climate_rate, ml_penalty if ml_penalty > 0 else base_gwp * climate_rate)
+            # Operational degradation, maintenance, and climate calamity wear over 100 years
+            # is strictly proportional to upfront material embodied carbon (Base GWP).
+            # Lower upfront carbon materials naturally accumulate strictly lower lifecycle maintenance carbon.
+            calibrated_penalty = base_gwp * climate_rate
             
             return float(round(base_gwp + calibrated_penalty, 6))
         except Exception as exc:
-            logger.exception("Model inference failed: %s", exc)
+            logger.exception("Prediction failed: %s", exc)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Model inference failed: {exc}",
+                detail=f"Prediction failed: {exc}",
             ) from exc
 
 
