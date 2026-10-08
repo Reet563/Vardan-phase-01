@@ -160,13 +160,13 @@ class PredictionService:
         feature_df = self._build_feature_dataframe(request, base_gwp)
 
         try:
-            # Formulate physical 100-year operational climate strain rate from climate scenario
-            hazard_factor = (request.extreme_weather_events / 50.0) * 0.18
-            thermal_factor = (max(0.0, request.temperature_anomaly + 2.0) / 7.0) * 0.12
-            slr_factor = (max(0.0, request.sea_level_rise + 5.0) / 55.0) * 0.08
-            policy_mitigation = (request.policy_score / 100.0) * 0.10
+            # Formulate dynamic 100-year operational climate strain rate from climate scenario
+            hazard_factor = (request.extreme_weather_events / 50.0) * 0.45
+            thermal_factor = (max(0.0, request.temperature_anomaly + 2.0) / 7.0) * 0.25
+            slr_factor = (max(0.0, request.sea_level_rise + 5.0) / 55.0) * 0.20
+            policy_mitigation = (request.policy_score / 100.0) * 0.25
 
-            climate_rate = max(0.03, (hazard_factor + thermal_factor + slr_factor - policy_mitigation))
+            climate_rate = max(0.05, (hazard_factor + thermal_factor + slr_factor - policy_mitigation))
             
             # Operational degradation, maintenance, and climate calamity wear over 100 years
             # is strictly proportional to upfront material embodied carbon (Base GWP).

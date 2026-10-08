@@ -363,7 +363,7 @@ export default function Dashboard({ onBackToLanding, defaultTab = 'material' }) 
       } catch (err) {
         console.error("Auto calculation error:", err);
       }
-    }, 120);
+    }, 30);
 
     return () => clearTimeout(timer);
   }, [selected, selectedAlternative, params, transportActive, transportParams]);
